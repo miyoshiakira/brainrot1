@@ -1,0 +1,16 @@
+
+①Claude紐づけ
+claude mcp add robloxstudio "npx -y robloxstudio-mcp@latest"
+
+
+1. **Rojoをダウンロードする**
+   ブラウザで [Rojo公式のリリース（GitHub）](https://github.com/rojo-rbx/rojo/releases/latest) を開き、**`rojo-7.4.x-windows.zip`** をクリックしてダウンロードしてください。
+
+2. **ファイルを配置する**
+   ダウンロードしたzipを解凍し、中にある **`rojo.exe`** をあなたの作業ディレクトリ `D:\Git\roblox_git` の中に直接移動します。
+
+3. **実行を確認する**
+   PowerShellでそのディレクトリに移動し、以下を実行してください。
+   ```powershell
+   cd D:\Git\roblox_git
+   .\rojo.exe --version

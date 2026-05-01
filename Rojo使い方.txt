@@ -1,0 +1,5 @@
+【初期化】
+.\rojo.exe init
+
+【サーバー起動】
+.\rojo.exe serve
