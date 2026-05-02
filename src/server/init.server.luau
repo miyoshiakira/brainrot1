@@ -6,7 +6,6 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
 
 -- モジュール読み込み待機
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
@@ -15,7 +14,11 @@ local DataManager = require(script.Modules.DataManager)
 local LaunchModule = require(script.Modules.LaunchManager)
 local LaunchManager = LaunchModule.LaunchManager
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+-- CharacterController を読み込む
+-- これにより、CharacterController.luau 内の OnServerInvoke が登録される
+local _CharacterController = require(script.Modules.CharacterController)
 
+print("CharacterController has been initialized.")
 print("=================================")
 print("Brainrot Launch Simulator サーバー起動")
 print("=================================")
@@ -97,5 +100,46 @@ end
 
 -- LaunchManagerを初期化
 LaunchManager.Initialize()
+
+local CollectionService = game:GetService("CollectionService")
+
+-- スロットの挙動を初期化する関数
+local function setupSlot(slot)
+
+    local prompt = Instance.new("ProximityPrompt")
+    prompt.Parent = slot
+    prompt.ObjectText = "スロット"
+
+    local characterId = slot:GetAttribute("CharacterId")
+    if characterId then
+        -- TODO: ここにキャラクターを配置するロジックを追加
+        -- 持っていくロジック
+        prompt.ActionText = "ひろう"
+        prompt.Triggered:Connect(function(player)
+            -- ここに「持っているものを置く」共通ロジック
+            -- クライアントに通知
+            RemoteEvents.CharacterPlaced:FireClient(player, {
+                Slot = slot,
+            })
+        end)
+    else
+        prompt.ActionText = "配置する"    
+        prompt.Triggered:Connect(function(player)
+            -- ここに「持っているものを置く」共通ロジック
+            -- クライアントに通知
+            RemoteEvents.CharacterPlaced:FireClient(player, {
+                Slot = slot,
+            })
+        end)
+    end
+end
+
+-- 既存の全スロットに適用
+for _, slot in ipairs(CollectionService:GetTagged("SlotPart")) do
+    setupSlot(slot)
+end
+
+-- 後から生成されたスロットにも自動適用（エンジニアらしい設計）
+CollectionService:GetInstanceAddedSignal("SlotPart"):Connect(setupSlot)
 
 print("[Server] 初期化完了")

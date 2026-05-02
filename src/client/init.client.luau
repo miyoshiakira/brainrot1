@@ -18,7 +18,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 -- RemoteEvents待機
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
-
+local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 print("=================================")
 print("Brainrot Launch Simulator クライアント起動")
 print("=================================")
@@ -869,12 +869,10 @@ local function clearAllWelds(model)
 
     -- モデル内のWeldを削除
     for _, obj in ipairs(model:GetDescendants()) do
-        print(string.format("溶接検査：%s",obj.Name))
         if obj:IsA("WeldConstraint") or obj:IsA("Weld") then
             if obj:IsA("WeldConstraint") or obj:IsA("Weld") then
                 -- 名前を問わず、物理的な結合はすべて断ち切る
                 obj:Destroy()
-                print("完全に破壊しました")
             end
         end
     end
@@ -882,11 +880,9 @@ local function clearAllWelds(model)
     -- モデルがPartの場合は直接チェック
     if model:IsA("BasePart") then
         for _, obj in ipairs(model:GetChildren()) do
-            print(string.format("溶接検査：%s",obj.Name))
             if obj:IsA("WeldConstraint") or obj:IsA("Weld") then
                 -- 名前を問わず、物理的な結合はすべて断ち切る
                 obj:Destroy()
-                print("完全に破壊しました")
             end
         end
     end
@@ -909,144 +905,37 @@ local function setModelPhysics(model, anchored, canCollide)
     end
 end
 
--- キャラクターを拾う（共通関数）
-local function pickupCharacter(model)
-    -- 既に運搬中なら何もしない
-    if CarrySystem.isCarrying then
-        print("[CarrySystem] 既に運搬中のため拾えません")
-        return false
-    end
+local function pickupCharacter(targetModel, characterId, weld)
+    if CarrySystem.isCarrying then return false end
 
     local character = player.Character
-    if not character then return false end
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
 
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-
-    local targetPart = getTargetPart(model)
-    if not targetPart then
-        warn("[CarrySystem] ターゲットパーツが見つかりません")
-        return false
-    end
-
-    -- 既存のWeldをクリア
-    clearAllWelds(model)
-
-    -- 物理設定（運搬用）
-    setModelPhysics(model, false, false)
-
-    -- Weldを作成
-    local weld = Instance.new("WeldConstraint")
-    weld.Name = "CarryWeld"
-    weld.Part0 = humanoidRootPart
-    weld.Part1 = targetPart
-    weld.Parent = targetPart
-
-    -- プレイヤーの前に配置
-    model:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -4))
-
-    -- 状態を更新
-    CarrySystem.heldModel = model
+    -- 4. 状態更新（複製品を管理対象にする）
+    CarrySystem.heldModel = targetModel
     CarrySystem.weld = weld
     CarrySystem.isCarrying = true
 
-    print("[CarrySystem] 拾った:", model.Name)
-    showNotification("🎁 キャラクター獲得!", "スロットに運んでクリックで配置", COLORS.Lavender)
-
+    print("[CarrySystem] 複製して拾い上げました:", characterId)
+    print(string.format("[CarrySystem] %s", CarrySystem.heldModel.Name))
     return true
 end
 
--- モデルの高さを取得してオフセットを計算
-local function getModelHeight(model)
-    local _, size = model:GetBoundingBox()
-    return size.Y
-end
-
--- キャラクターを配置（共通関数）
 local function placeCharacter(slot)
-    if not CarrySystem.isCarrying or not CarrySystem.heldModel then
-        return false
+    if not CarrySystem.isCarrying or not CarrySystem.heldModel then return false end
+    -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
+    -- RemoteFunctionを使って成否を受け取るのがスマートです
+    local success, errorMessage = RemoteFunctions.CharacterPlaced:InvokeServer(CarrySystem.heldModel, slot)
+    if success then
+        -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
+        CarrySystem.weld = nil
+        CarrySystem.heldModel = nil
+        CarrySystem.isCarrying = false
+        showNotification("✅ 配置完了!", "スロットに配置しました", COLORS.Good)
+    else
+        showNotification("⚠️ 失敗", errorMessage or "配置できませんでした", COLORS.Yellow)
     end
-    print("placeCharacter")
-    -- スロットの状態チェック
-    local occupied = slot:FindFirstChild("Occupied")
-    if occupied and occupied.Value then
-        showNotification("⚠️ 使用中", "このスロットは既に使用されています", Color3.fromRGB(255, 100, 100))
-        return false
-    end
-
-    local model = CarrySystem.heldModel
-    local playerChar = player.Character
-    if not playerChar then return false end
-
-    local humanoidRootPart = playerChar:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-
-    -- Weldを削除
-    clearAllWelds(model)
-    if CarrySystem.weld and CarrySystem.weld.Parent then
-        CarrySystem.weld:Destroy()
-    end
-
-    -- 1. 物理設定（移動しやすくするため、一旦Anchoredをfalseに）
-    setModelPhysics(model, false, false) 
-
-    -- 2. 配置実行
-    local height = getModelHeight(model)
-    local targetCFrame = slot.CFrame * CFrame.new(0, height / 2 + 0.5, 0)
-    model:PivotTo(targetCFrame)
-
-    -- 3. 物理固定（移動した後に固定する）
-    -- わずかな待ち時間を入れると同期が安定します
-    task.defer(function()
-        for _, part in ipairs(model:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Anchored = true
-                part.CanCollide = true -- 配置後は当たり判定を戻す
-            end
-        end
-    end)
-    -- UI通知
-    local charName = model:GetAttribute("CharacterName") or "Unknown"
-    -- 4. サーバーへ通知（この中でサーバー側でもモデルをAnchoredにすることを確認してください）
-    RemoteEvents.CharacterPlaced:FireServer(model.Name, charName,slot.Name)
-
-    showNotification("✅ 配置完了!", charName .. " をスロットに配置しました", COLORS.Good)
-
-    -- 状態をリセット
-    CarrySystem.heldModel = nil
-    CarrySystem.weld = nil
-    CarrySystem.isCarrying = false
-
-    print("[CarrySystem] 配置完了:", slot.Name)
-    return true
-end
-
--- 最も近いスロットを探す
-local function findNearestSlot()
-    local character = player.Character
-    if not character then return nil end
-
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return nil end
-
-    local slotsFolder = game.Workspace:FindFirstChild("CharacterSlots")
-    if not slotsFolder then return nil end
-
-    local nearestSlot = nil
-    local nearestDistance = 15
-
-    for _, slot in ipairs(slotsFolder:GetChildren()) do
-        if slot:IsA("Part") and slot.Name:find("Slot_") then
-            local distance = (slot.Position - humanoidRootPart.Position).Magnitude
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestSlot = slot
-            end
-        end
-    end
-
-    return nearestSlot
 end
 
 -- スロットからキャラクターを取り外す
@@ -1140,40 +1029,8 @@ local function removeFromSlot(slot)
     return true
 end
 
--- クリックでキャラクターを配置/取り外し
-local function setupPlacementInput()
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-
-        -- 左クリックで配置/取り外し
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local nearestSlot = findNearestSlot()
-
-            if CarrySystem.isCarrying and CarrySystem.heldModel then
-                -- キャラクターを配置
-                if nearestSlot then
-                    placeCharacter(nearestSlot)
-                else
-                    showNotification("⚠️ スロットが見つかりません", "スロットに近づいてください", Color3.fromRGB(255, 200, 100))
-                end
-            elseif nearestSlot then
-                -- スロットから取り外し
-                local occupied = nearestSlot:FindFirstChild("Occupied")
-                if occupied and occupied.Value then
-                    removeFromSlot(nearestSlot)
-                else
-                    showNotification("ℹ️ 空のスロット", "このスロットは空です", Color3.fromRGB(150, 150, 200))
-                end
-            end
-        end
-    end)
-end
-
 -- UI初期化
 createMainUI()
-
--- キャラクター配置入力を設定
-setupPlacementInput()
 
 -- プレイヤー死亡時に運搬状態をリセット
 player.CharacterAdded:Connect(function(character)
@@ -1281,13 +1138,20 @@ RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
     task.wait(0.3)
 
     local modelName = data.ModelName
+    local weld = data.Weld
+    local characterId = data.CharacterId
     local model = game.Workspace:FindFirstChild(modelName)
 
     if model then
-        pickupCharacter(model)
+        pickupCharacter(model, characterId, weld)
     else
         warn("[CharacterSpawned] モデルが見つかりません:", modelName)
     end
+end)
+
+RemoteEvents.CharacterPlaced.OnClientEvent:Connect(function(data)
+    -- TODO: キャラクターをスロットに配置する処理を追加
+    placeCharacter(data.Slot)
 end)
 
 RemoteEvents.CharacterSelected.OnClientEvent:Connect(function(charId, newBonus)

@@ -171,7 +171,10 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     if slimeTemplate then
         -- テンプレートからクローン
         charModel = slimeTemplate:Clone()
-        charModel.Name = "HeldCharacter_" .. player.Name
+        local HttpService = game:GetService("HttpService")
+        local uniqueId = HttpService:GenerateGUID(false) -- ランダムなIDを生成
+
+        charModel.Name = "HeldCharacter_" .. player.Name .. "_" .. uniqueId
 
         -- レアリティに応じて色を変更
         for _, part in ipairs(charModel:GetDescendants()) do
@@ -213,15 +216,12 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
 
     -- PrimaryPartを取得（Weld用）
     local primaryPart = charModel.PrimaryPart or charModel:FindFirstChild("Body") or (charModel:IsA("BasePart") and charModel)
-
-    if primaryPart then
-        -- Weldでプレイヤーに持たせる
-        local weld = Instance.new("WeldConstraint")
-        weld.Name = "CharacterWeld"
-        weld.Part0 = humanoidRootPart
-        weld.Part1 = primaryPart
-        weld.Parent = primaryPart
-    end
+    -- Weldでプレイヤーに持たせる
+    local weld = Instance.new("WeldConstraint")
+    weld.Name = "CharacterWeld"
+    weld.Part0 = humanoidRootPart
+    weld.Part1 = primaryPart
+    weld.Parent = primaryPart
 
     -- プレイヤーの前に配置
     charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
@@ -233,6 +233,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
         CharacterId = characterId,
         CharacterName = charDef.Name,
         Rarity = charDef.Rarity,
+        Weld = weld,
     })
 
     return charModel
@@ -541,6 +542,34 @@ function LaunchManager.GetCharacterCollection(player: Player)
     }
 end
 
+function LaunchManager.CharacterPlaced(player: Player, characterId: string, slot: Instance)
+    print(string.format("[LaunchManager] %s が %s を %s に配置", player.Name, characterId, slot.Name))
+    if slot then
+        local occupied = slot:FindFirstChild("Occupied")
+        local charIdValue = slot:FindFirstChild("CharacterId")
+
+        -- サーバー側で最終チェック（チートや同時押し対策）
+        if occupied and not occupied.Value then
+            -- 1. データの更新
+            occupied.Value = true
+            if charIdValue then
+                charIdValue.Value = characterId
+            end
+
+            -- 2. 物理的な実体の操作（モデルの親をスロットにする、または固定する）
+            -- ここでサーバー側でも PivotTo や Anchored を行うことで
+            -- 全プレイヤーに対して位置を確定させる
+            print(string.format("[Server] %s を %s に確定しました", characterId, slot.Name))
+        else
+            warn("スロットが既に埋まっているか、不正なリクエストです")
+        end
+    end
+end
+
+function LaunchManager.CharacterPickedUp(player: Player, characterId: string)
+    print(string.format("[LaunchManager] %s が %s を所有", player.Name, characterId))
+end
+
 -- 初期化
 function LaunchManager.Initialize()
     -- 発射リクエスト受信
@@ -562,15 +591,14 @@ function LaunchManager.Initialize()
     RemoteEvents.CharacterSelected.OnServerEvent:Connect(function(player, characterId)
         LaunchManager.SelectCharacter(player, characterId)
     end)
-
+    
+    -- キャラクターを手元に拾う
+    RemoteEvents.CharacterPickedUp.OnServerEvent:Connect(function(player, characterId)
+        LaunchManager.CharacterPickedUp(player, characterId)
+    end)
     -- キャラクター育成
     RemoteEvents.CharacterUpgraded.OnServerEvent:Connect(function(player, characterId)
         LaunchManager.UpgradeCharacter(player, characterId)
-    end)
-
-    -- キャラクター配置
-    RemoteEvents.CharacterPlaced.OnServerEvent:Connect(function(player, characterId, slotName)
-        print(string.format("[LaunchManager] %s が %s を %s に配置", player.Name, characterId, slotName))
     end)
 
     -- キャラクター取り外し
