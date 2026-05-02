@@ -926,107 +926,37 @@ local function placeCharacter(slot)
     if not CarrySystem.isCarrying or not CarrySystem.heldModel then return false end
     -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
     -- RemoteFunctionを使って成否を受け取るのがスマートです
-    local success, errorMessage = RemoteFunctions.CharacterPlaced:InvokeServer(CarrySystem.heldModel, slot)
+    local success, errorMessage = RemoteFunctions.CharacterPlaceTry:InvokeServer(CarrySystem.heldModel, slot)
     if success then
         -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
         CarrySystem.weld = nil
         CarrySystem.heldModel = nil
         CarrySystem.isCarrying = false
         showNotification("✅ 配置完了!", "スロットに配置しました", COLORS.Good)
+        return true
     else
         showNotification("⚠️ 失敗", errorMessage or "配置できませんでした", COLORS.Yellow)
+        return false
     end
 end
 
 -- スロットからキャラクターを取り外す
 local function removeFromSlot(slot)
-    -- 既に運搬中なら拒否
-    if CarrySystem.isCarrying then
-        showNotification("⚠️ 既に運搬中", "まず現在のキャラクターを配置してください", Color3.fromRGB(255, 100, 100))
+    if not CarrySystem.isCarrying or not CarrySystem.heldModel then return false end
+    -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
+    -- RemoteFunctionを使って成否を受け取るのがスマートです
+    local success, errorMessage = RemoteFunctions.CharacterPickupTry:InvokeServer(CarrySystem.heldModel, slot)
+    if success then
+        -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
+        CarrySystem.weld = nil
+        CarrySystem.heldModel = nil
+        CarrySystem.isCarrying = true
+        showNotification("✅ 取得完了!", "スロットから取り上げました", COLORS.Good)
+        return true
+    else
+        showNotification("⚠️ 失敗", errorMessage or "取り上げできませんでした", COLORS.Yellow)
         return false
     end
-
-    local character = player.Character
-    if not character then return false end
-
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-
-    -- スロットが空かチェック
-    local occupied = slot:FindFirstChild("Occupied")
-    if not occupied or not occupied.Value then
-        showNotification("⚠️ 空のスロット", "このスロットにはキャラクターがいません", Color3.fromRGB(255, 200, 100))
-        return false
-    end
-
-    local charIdValue = slot:FindFirstChild("CharacterId")
-    if not charIdValue then return false end
-
-    local charId = charIdValue.Value
-
-    -- Workspaceでモデルを探す
-    local foundModel = nil
-    for _, obj in ipairs(game.Workspace:GetChildren()) do
-        if (obj:IsA("Model") or obj:IsA("Part")) and obj:GetAttribute("CharacterId") == charId then
-            foundModel = obj
-            break
-        end
-    end
-
-    -- モデルが見つからない場合は作成
-    if not foundModel then
-        local charModule = require(ReplicatedStorage.Shared.BrainrotCharacters)
-        local charDef = charModule.GetCharacterById(charId)
-
-        if charDef then
-            foundModel = Instance.new("Part")
-            foundModel.Name = "HeldCharacter_" .. player.Name
-            foundModel.Size = Vector3.new(2, 2, 2)
-            foundModel.Color = RARITY_COLORS[charDef.Rarity] or Color3.fromRGB(255, 255, 255)
-            foundModel.Material = Enum.Material.SmoothPlastic
-            foundModel:SetAttribute("CharacterId", charId)
-            foundModel:SetAttribute("CharacterName", charDef.Name)
-            foundModel:SetAttribute("Rarity", charDef.Rarity)
-            foundModel.Parent = game.Workspace
-        end
-    end
-
-    if not foundModel then return false end
-
-    -- 既存のWeldをクリア
-    clearAllWelds(foundModel)
-
-    -- 物理設定（運搬用）
-    setModelPhysics(foundModel, false, false)
-
-    -- Weldを作成
-    local targetPart = getTargetPart(foundModel)
-    local weld = Instance.new("WeldConstraint")
-    weld.Name = "CarryWeld"
-    weld.Part0 = humanoidRootPart
-    weld.Part1 = targetPart
-    weld.Parent = targetPart
-
-    -- プレイヤーの前に配置
-    foundModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -4))
-
-    -- スロットを空にする
-    occupied.Value = false
-    charIdValue.Value = ""
-
-    -- 状態を更新
-    CarrySystem.heldModel = foundModel
-    CarrySystem.weld = weld
-    CarrySystem.isCarrying = true
-
-    local charName = foundModel:GetAttribute("CharacterName") or "Unknown"
-    showNotification("📤 取り外し完了", charName .. " を取り外しました", COLORS.Mint)
-
-    -- サーバーに通知
-    RemoteEvents.CharacterRemoved:FireServer(charId, slot.Name)
-
-    print("[CarrySystem] 取り外し:", charName)
-    return true
 end
 
 -- UI初期化
@@ -1137,10 +1067,10 @@ RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
     -- 少し待ってからモデルを探す
     task.wait(0.3)
 
-    local modelName = data.ModelName
+    local modelName = data.Model.Name
     local weld = data.Weld
     local characterId = data.CharacterId
-    local model = game.Workspace:FindFirstChild(modelName)
+    local model = data.Model
 
     if model then
         pickupCharacter(model, characterId, weld)
@@ -1149,10 +1079,19 @@ RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
     end
 end)
 
-RemoteEvents.CharacterPlaced.OnClientEvent:Connect(function(data)
+RemoteFunctions.SlotActionTrigger.OnClientInvoke = function(data)
     -- TODO: キャラクターをスロットに配置する処理を追加
-    placeCharacter(data.Slot)
-end)
+    local slot = data.Slot
+    local characterId = slot:GetAttribute("CharacterId")
+    if characterId then
+        -- とりあげる
+        return removeFromSlot(slot)
+    else
+        -- 設置する
+        return placeCharacter(slot)
+    end
+    
+end
 
 RemoteEvents.CharacterSelected.OnClientEvent:Connect(function(charId, newBonus)
     activeCharacterId = charId

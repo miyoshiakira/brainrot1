@@ -30,5 +30,7 @@ local function getOrCreateRemoteFunction(name: string): RemoteFunction
     return remote :: RemoteFunction
 end
 
-RemoteFunctions.CharacterPlaced = getOrCreateRemoteFunction("CharacterPlaced")  -- キャラクターをスロットに配置
+RemoteFunctions.CharacterPlaceTry = getOrCreateRemoteFunction("CharacterPlaceTry")  -- キャラクターをスロットに配置
+RemoteFunctions.CharacterPickupTry = getOrCreateRemoteFunction("CharacterPickupTry")  -- キャラクターをスロットからひろうイベント
+RemoteFunctions.SlotActionTrigger = getOrCreateRemoteFunction("SlotActionTrigger")  -- キャラクターをスロットに配置のイベント
 return RemoteFunctions

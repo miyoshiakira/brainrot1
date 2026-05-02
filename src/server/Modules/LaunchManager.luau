@@ -9,7 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-
+local constants = require("../Constants")
 local DataManager = require(script.Parent.DataManager)
 
 -- RemoteEvents待機
@@ -171,10 +171,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     if slimeTemplate then
         -- テンプレートからクローン
         charModel = slimeTemplate:Clone()
-        local HttpService = game:GetService("HttpService")
-        local uniqueId = HttpService:GenerateGUID(false) -- ランダムなIDを生成
-
-        charModel.Name = "HeldCharacter_" .. player.Name .. "_" .. uniqueId
+        charModel.Name = constants.CHARACTER_MODEL_NAME
 
         -- レアリティに応じて色を変更
         for _, part in ipairs(charModel:GetDescendants()) do
@@ -225,11 +222,12 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
 
     -- プレイヤーの前に配置
     charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
-    charModel.Parent = game.Workspace
+    charModel.Parent = character
 
     -- クライアントに通知
     RemoteEvents.CharacterSpawned:FireClient(player, {
         ModelName = charModel.Name,
+        Model = charModel,
         CharacterId = characterId,
         CharacterName = charDef.Name,
         Rarity = charDef.Rarity,
@@ -540,30 +538,6 @@ function LaunchManager.GetCharacterCollection(player: Player)
         TotalCollected = profile.TotalCharactersCollected or 0,
         RainbowFound = profile.RainbowCharactersFound or 0,
     }
-end
-
-function LaunchManager.CharacterPlaced(player: Player, characterId: string, slot: Instance)
-    print(string.format("[LaunchManager] %s が %s を %s に配置", player.Name, characterId, slot.Name))
-    if slot then
-        local occupied = slot:FindFirstChild("Occupied")
-        local charIdValue = slot:FindFirstChild("CharacterId")
-
-        -- サーバー側で最終チェック（チートや同時押し対策）
-        if occupied and not occupied.Value then
-            -- 1. データの更新
-            occupied.Value = true
-            if charIdValue then
-                charIdValue.Value = characterId
-            end
-
-            -- 2. 物理的な実体の操作（モデルの親をスロットにする、または固定する）
-            -- ここでサーバー側でも PivotTo や Anchored を行うことで
-            -- 全プレイヤーに対して位置を確定させる
-            print(string.format("[Server] %s を %s に確定しました", characterId, slot.Name))
-        else
-            warn("スロットが既に埋まっているか、不正なリクエストです")
-        end
-    end
 end
 
 function LaunchManager.CharacterPickedUp(player: Player, characterId: string)

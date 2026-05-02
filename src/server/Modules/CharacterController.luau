@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local constants = require("../Constants")
 -- モジュール読み込み待機
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 
@@ -66,7 +66,7 @@ local function setModelPhysics(model, anchored, canCollide)
     end
 end
 -- キャラクターをスロットに配置（RemoteFunction）
-RemoteFunctions.CharacterPlaced.OnServerInvoke = function(player, heldModel, slot)
+RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModel, slot)
     -- 1. バリデーション
     local profile = DataManager.GetProfile(player)
     if not profile or not heldModel or not slot then
@@ -86,17 +86,20 @@ RemoteFunctions.CharacterPlaced.OnServerInvoke = function(player, heldModel, slo
     -------------------------------------------------------
     -- 1. 名前を指定してピンポイント破壊
     clearAllWelds(heldModel)
-    setModelPhysics(heldModel, true, false)
+
     -- スロットの位置へ移動
     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
     heldModel:PivotTo(targetCFrame)
-
+    heldModel.Parent = slot
+    setModelPhysics(heldModel, true, false)
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
     profile.ActiveCharacter = characterId
     
     -- スロットの状態更新
+    print(string.format("[Server] Setting CharacterId to %s", characterId))
+    slot:SetAttribute("CharacterId", characterId)
     slot:SetAttribute("Occupied", true)
     slot:SetAttribute("Owner", player.UserId)
 
@@ -115,6 +118,68 @@ RemoteFunctions.CharacterPlaced.OnServerInvoke = function(player, heldModel, slo
     }
 end
 
+-- キャラクターをスロットからとりあげる（RemoteFunction）
+RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, heldModel, slot)
+    -- 1. バリデーション
+    local profile = DataManager.GetProfile(player)
+    if not profile or not heldModel or not slot then
+        return { success = false, error = "Invalid Request" }
+    end
+
+    if slot:GetAttribute("Occupied") then
+        return { success = false, error = "Slot already occupied" }
+    end
+
+    local characterId = heldModel:GetAttribute("CharacterId")
+    if not characterId or not profile.Characters[characterId] then
+        return { success = false, error = "Character data missing" }
+    end
+    -------------------------------------------------------
+    -- 物理的な配置処理
+    -------------------------------------------------------
+    -- 1. 名前を指定してピンポイント破壊
+    local charModel = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+    if not charModel then return nil end
+    
+    local character = player.Character
+    if not character then return nil end
+
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
+
+    -- PrimaryPartを取得（Weld用）
+    local primaryPart = charModel.PrimaryPart or charModel:FindFirstChild("Body") or (charModel:IsA("BasePart") and charModel)
+    -- Weldでプレイヤーに持たせる
+    local weld = Instance.new("WeldConstraint")
+    weld.Name = "CharacterWeld"
+    weld.Part0 = humanoidRootPart
+    weld.Part1 = primaryPart
+    weld.Parent = primaryPart
+
+    -- プレイヤーの前に配置
+    charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
+    charModel.Parent = player
+
+    -------------------------------------------------------
+    -- データの更新処理
+    -------------------------------------------------------
+    profile.ActiveCharacter = nil
+    
+    -- スロットの状態更新
+    print(string.format("[Server] Getting CharacterId to %s", characterId))
+    slot:SetAttribute("CharacterId", nil)
+    slot:SetAttribute("Occupied", false)
+    slot:SetAttribute("Owner", nil)
+
+    print(string.format("[Server] %s got %s on %s", player.Name, characterId, slot.Name))
+
+    return {
+        success = true,
+        activeCharacter = characterId,
+        characterBonus = profile.CharacterBonus
+    }
+end
+
 return {
-    CharacterPlaced = RemoteFunctions.CharacterPlaced
+    RemoteFunctions = RemoteFunctions
 }

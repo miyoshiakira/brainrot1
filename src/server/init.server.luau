@@ -14,6 +14,7 @@ local DataManager = require(script.Modules.DataManager)
 local LaunchModule = require(script.Modules.LaunchManager)
 local LaunchManager = LaunchModule.LaunchManager
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- CharacterController を読み込む
 -- これにより、CharacterController.luau 内の OnServerInvoke が登録される
 local _CharacterController = require(script.Modules.CharacterController)
@@ -109,29 +110,21 @@ local function setupSlot(slot)
     local prompt = Instance.new("ProximityPrompt")
     prompt.Parent = slot
     prompt.ObjectText = "スロット"
-
-    local characterId = slot:GetAttribute("CharacterId")
-    if characterId then
-        -- TODO: ここにキャラクターを配置するロジックを追加
-        -- 持っていくロジック
-        prompt.ActionText = "ひろう"
-        prompt.Triggered:Connect(function(player)
-            -- ここに「持っているものを置く」共通ロジック
-            -- クライアントに通知
-            RemoteEvents.CharacterPlaced:FireClient(player, {
-                Slot = slot,
-            })
-        end)
-    else
-        prompt.ActionText = "配置する"    
-        prompt.Triggered:Connect(function(player)
-            -- ここに「持っているものを置く」共通ロジック
-            -- クライアントに通知
-            RemoteEvents.CharacterPlaced:FireClient(player, {
-                Slot = slot,
-            })
-        end)
-    end
+    prompt.ActionText = "配置する"    
+    prompt.Triggered:Connect(function(player)
+        -- ここに「持っているものを置く」共通ロジック
+        -- クライアントに通知
+        local success = RemoteFunctions.SlotActionTrigger:InvokeClient(player, {
+            Slot = slot,
+        })
+        local characterId = slot:GetAttribute("CharacterId")
+        print(string.format("characterId: %s", tostring(characterId)))
+        if characterId then
+            prompt.ActionText = "ひろう"
+        else
+            prompt.ActionText = "配置する"
+        end
+    end)
 end
 
 -- 既存の全スロットに適用

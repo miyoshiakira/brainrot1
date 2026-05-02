@@ -60,7 +60,6 @@ RemoteEvents.CharacterCollected = getOrCreateRemoteEvent("CharacterCollected")  
 RemoteEvents.CharacterSelected = getOrCreateRemoteEvent("CharacterSelected")    -- キャラクター選択
 RemoteEvents.CharacterPickedUp = getOrCreateRemoteEvent("CharacterPickedUp")    -- キャラクターを拾う
 RemoteEvents.CharacterUpgraded = getOrCreateRemoteEvent("CharacterUpgraded")  -- キャラクター育成
-RemoteEvents.CharacterPlaced = getOrCreateRemoteEvent("CharacterPlaced")  -- キャラクターをスロットに配置のイベント
 RemoteEvents.CharacterSpawned = getOrCreateRemoteEvent("CharacterSpawned")  -- キャラクター3Dモデル生成
 RemoteEvents.CharacterRemoved = getOrCreateRemoteEvent("CharacterRemoved")  -- キャラクター取り外し
 
@@ -68,5 +67,4 @@ RemoteEvents.CharacterRemoved = getOrCreateRemoteEvent("CharacterRemoved")  -- �
 RemoteEvents.GetPlayerData = getOrCreateRemoteFunction("GetPlayerData")
 RemoteEvents.GetGlobalStats = getOrCreateRemoteFunction("GetGlobalStats")  -- グローバル統計取得
 RemoteEvents.GetCharacterCollection = getOrCreateRemoteFunction("GetCharacterCollection")  -- キャラクターコレクション取得
-RemoteEvents.CharacterPlaced = getOrCreateRemoteFunction("CharacterPlaced")  -- キャラクターをスロットに配置
 return RemoteEvents
