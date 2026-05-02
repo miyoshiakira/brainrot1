@@ -945,17 +945,18 @@ local function removeFromSlot(slot)
     if CarrySystem.isCarrying and CarrySystem.heldModel then return true end
     -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
     -- RemoteFunctionを使って成否を受け取るのがスマートです
-    local success, errorMessage, heldModel, weld = RemoteFunctions.CharacterPickupTry:InvokeServer(slot)
-    if success then
+    local data = RemoteFunctions.CharacterPickupTry:InvokeServer(slot)
+    if data.success then
         -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
-        CarrySystem.weld = weld
-        CarrySystem.heldModel = heldModel
+        print(string.format("[Client] heldModel: %s", data.heldModel.Name))
+        CarrySystem.weld = data.weld
+        CarrySystem.heldModel = data.heldModel
         CarrySystem.isCarrying = true
         showNotification("✅ 取得完了!", "スロットから取り上げました", COLORS.Good)
         return true
     else
-        print(errorMessage)
-        showNotification("⚠️ 失敗", errorMessage or "取り上げできませんでした", COLORS.Yellow)
+        print(data.errorMessage)
+        showNotification("⚠️ 失敗", data.errorMessage or "取り上げできませんでした", COLORS.Yellow)
         return false
     end
 end

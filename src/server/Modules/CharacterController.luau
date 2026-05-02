@@ -172,6 +172,7 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slot)
 
     return {
         success = true,
+        errorMessage = "",
         heldModel = charModel,
         weld = weld,
     }
