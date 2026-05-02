@@ -69,6 +69,7 @@ end
 RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModel, slot)
     -- 1. バリデーション
     local profile = DataManager.GetProfile(player)
+    local playerCharacter = player.Character
     if not profile or not heldModel or not slot then
         return { success = false, error = "Invalid Request" }
     end
@@ -84,14 +85,15 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModel, s
     -------------------------------------------------------
     -- 物理的な配置処理
     -------------------------------------------------------
-    -- 1. 名前を指定してピンポイント破壊
+    -- 結合解除（親リセット）
+    heldModel.Parent = game.Workspace
     clearAllWelds(heldModel)
-
     -- スロットの位置へ移動
     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
     heldModel:PivotTo(targetCFrame)
-    heldModel.Parent = slot
+    -- 固定処理
     setModelPhysics(heldModel, true, false)
+    heldModel.Parent = slot
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
@@ -119,20 +121,11 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModel, s
 end
 
 -- キャラクターをスロットからとりあげる（RemoteFunction）
-RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, heldModel, slot)
+RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slot)
     -- 1. バリデーション
     local profile = DataManager.GetProfile(player)
-    if not profile or not heldModel or not slot then
-        return { success = false, error = "Invalid Request" }
-    end
-
-    if slot:GetAttribute("Occupied") then
-        return { success = false, error = "Slot already occupied" }
-    end
-
-    local characterId = heldModel:GetAttribute("CharacterId")
-    if not characterId or not profile.Characters[characterId] then
-        return { success = false, error = "Character data missing" }
+    if not profile then
+        return { success = false, errorMessage = "Invalid Request" }
     end
     -------------------------------------------------------
     -- 物理的な配置処理
@@ -143,12 +136,15 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, heldModel, 
     
     local character = player.Character
     if not character then return nil end
-
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return nil end
-
     -- PrimaryPartを取得（Weld用）
     local primaryPart = charModel.PrimaryPart or charModel:FindFirstChild("Body") or (charModel:IsA("BasePart") and charModel)
+
+    -- 初期化（固定解除）
+    charModel.Parent = game.Workspace
+    setModelPhysics(charModel, false, false)
+
     -- Weldでプレイヤーに持たせる
     local weld = Instance.new("WeldConstraint")
     weld.Name = "CharacterWeld"
@@ -158,7 +154,7 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, heldModel, 
 
     -- プレイヤーの前に配置
     charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
-    charModel.Parent = player
+    charModel.Parent = character
 
     -------------------------------------------------------
     -- データの更新処理
@@ -166,6 +162,7 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, heldModel, 
     profile.ActiveCharacter = nil
     
     -- スロットの状態更新
+    local characterId = slot:GetAttribute("CharacterId")
     print(string.format("[Server] Getting CharacterId to %s", characterId))
     slot:SetAttribute("CharacterId", nil)
     slot:SetAttribute("Occupied", false)
@@ -175,8 +172,8 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, heldModel, 
 
     return {
         success = true,
-        activeCharacter = characterId,
-        characterBonus = profile.CharacterBonus
+        heldModel = charModel,
+        weld = weld,
     }
 end
 
