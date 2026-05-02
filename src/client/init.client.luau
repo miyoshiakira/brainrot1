@@ -855,56 +855,6 @@ local function resetCarryState()
     CarrySystem.isCarrying = false
 end
 
--- モデルからターゲットパーツを取得
-local function getTargetPart(model)
-    if model:IsA("BasePart") then
-        return model
-    end
-    return model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
-end
-
--- モデルの全Weldを削除
-local function clearAllWelds(model)
-    if not model then return end
-
-    -- モデル内のWeldを削除
-    for _, obj in ipairs(model:GetDescendants()) do
-        if obj:IsA("WeldConstraint") or obj:IsA("Weld") then
-            if obj:IsA("WeldConstraint") or obj:IsA("Weld") then
-                -- 名前を問わず、物理的な結合はすべて断ち切る
-                obj:Destroy()
-            end
-        end
-    end
-
-    -- モデルがPartの場合は直接チェック
-    if model:IsA("BasePart") then
-        for _, obj in ipairs(model:GetChildren()) do
-            if obj:IsA("WeldConstraint") or obj:IsA("Weld") then
-                -- 名前を問わず、物理的な結合はすべて断ち切る
-                obj:Destroy()
-            end
-        end
-    end
-end
-
--- モデルの物理設定
-local function setModelPhysics(model, anchored, canCollide)
-    if model:IsA("BasePart") then
-        model.Anchored = anchored
-        model.CanCollide = canCollide
-        model.Massless = not anchored
-    else
-        for _, part in ipairs(model:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Anchored = anchored
-                part.CanCollide = canCollide
-                part.Massless = not anchored
-            end
-        end
-    end
-end
-
 local function pickupCharacter(targetModel, characterId, weld)
     if CarrySystem.isCarrying then return false end
 

@@ -164,7 +164,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
 
     -- スライムテンプレートを取得
     local templatesFolder = ReplicatedStorage:FindFirstChild("CharacterTemplates")
-    local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild("SlimeTemplate")
+    local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild("CuteSlimeTemplate")
 
     local charModel
 
@@ -195,14 +195,14 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
         end
     else
         -- フォールバック：シンプルなブロック
-        charModel = Instance.new("Part")
-        charModel.Name = "HeldCharacter_" .. player.Name
-        charModel.Size = Vector3.new(2, 2, 2)
-        charModel.Color = charColor
-        charModel.Material = Enum.Material.SmoothPlastic
-        charModel.CanCollide = false
-        charModel.Anchored = false
-        charModel.Massless = true
+        -- charModel = Instance.new("Part")
+        -- charModel.Name = "HeldCharacter_" .. player.Name
+        -- charModel.Size = Vector3.new(2, 2, 2)
+        -- charModel.Color = charColor
+        -- charModel.Material = Enum.Material.SmoothPlastic
+        -- charModel.CanCollide = false
+        -- charModel.Anchored = false
+        -- charModel.Massless = true
     end
 
     -- キャラクター情報を属性として保存
@@ -218,7 +218,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     weld.Name = "CharacterWeld"
     weld.Part0 = humanoidRootPart
     weld.Part1 = primaryPart
-    weld.Parent = primaryPart
+    weld.Parent = humanoidRootPart
 
     -- プレイヤーの前に配置
     charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))

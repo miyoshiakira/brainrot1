@@ -16,33 +16,8 @@ local function clearAllWelds(model: Instance)
     -- 1. モデル内の全オブジェクトを走査（子要素としてのWeldを破壊）
     for _, descendant in ipairs(model:GetDescendants()) do
         -- すべての溶接・制約系をターゲットにする
-        if descendant:IsA("Weld") or descendant:IsA("WeldConstraint") or descendant:IsA("ManualWeld") then
+        if descendant:IsA("Weld") or descendant:IsA("WeldConstraint") or descendant:IsA("CharacterWeld") then
             descendant:Destroy()
-        end
-        
-        -- 2. パーツ単位での「外部接続」を破壊
-        if descendant:IsA("BasePart") then
-            -- GetJoints() はそのパーツを起点とするすべての物理ジョイントを返す
-            -- これにより、プレイヤーの腕側に生成されたWeldなども道連れにできる
-            for _, joint in ipairs(descendant:GetJoints()) do
-                joint:Destroy()
-            end
-
-            -- 3. 物理演算の完全停止（配置モードへの移行）
-            descendant.Anchored = true      -- サーバー側で物理演算を止める
-            descendant.CanCollide = true   -- 当たり判定を正常化
-            
-            -- 慣性をリセット（置いた瞬間に滑るのを防ぐ）
-            descendant.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            descendant.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-
-            -- 4. ネットワークオーナーシップをサーバーに強制移管
-            -- これを行わないと、プレイヤーが離れた時に「ガクッ」と位置がズレることがある
-            local success, _ = pcall(function()
-                if descendant:CanSetNetworkOwnership() then
-                    descendant:SetNetworkOwner(nil)
-                end
-            end)
         end
     end
     
@@ -87,11 +62,13 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModel, s
     -------------------------------------------------------
     -- 結合解除（親リセット）
     heldModel.Parent = game.Workspace
-    clearAllWelds(heldModel)
     -- スロットの位置へ移動
     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
     heldModel:PivotTo(targetCFrame)
-    -- 固定処理
+    -- プレイヤーのHumanoidRootPartからWeldを解除
+    local humanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
+    clearAllWelds(humanoidRootPart)
+    -- スロットへ固定処理
     setModelPhysics(heldModel, true, false)
     heldModel.Parent = slot
     -------------------------------------------------------
@@ -143,18 +120,18 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slot)
 
     -- 初期化（固定解除）
     charModel.Parent = game.Workspace
+    -- プレイヤーの前に配置
+    charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
+    charModel.Parent = character
+    -- 全パーツの物理設定（スロットから解除）
     setModelPhysics(charModel, false, false)
-
+    
     -- Weldでプレイヤーに持たせる
     local weld = Instance.new("WeldConstraint")
     weld.Name = "CharacterWeld"
     weld.Part0 = humanoidRootPart
     weld.Part1 = primaryPart
-    weld.Parent = primaryPart
-
-    -- プレイヤーの前に配置
-    charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
-    charModel.Parent = character
+    weld.Parent = humanoidRootPart
 
     -------------------------------------------------------
     -- データの更新処理
