@@ -97,41 +97,6 @@ local function createMainUI(): ScreenGui
     topBar.BorderSizePixel = 0
     topBar.Parent = screenGui
 
-    -- 高度表示
-    local heightFrame = Instance.new("Frame")
-    heightFrame.Name = "HeightFrame"
-    heightFrame.Size = UDim2.new(0, 200, 0, 50)
-    heightFrame.Position = UDim2.new(0, 20, 0, 5)
-    heightFrame.BackgroundColor3 = COLORS.Sky
-    heightFrame.BackgroundTransparency = 0.2
-    heightFrame.BorderSizePixel = 0
-    heightFrame.Parent = topBar
-
-    local heightCorner = Instance.new("UICorner")
-    heightCorner.CornerRadius = UDim.new(0, 12)
-    heightCorner.Parent = heightFrame
-
-    local heightIcon = Instance.new("TextLabel")
-    heightIcon.Name = "Icon"
-    heightIcon.Size = UDim2.new(0, 40, 1, 0)
-    heightIcon.Position = UDim2.new(0, 5, 0, 0)
-    heightIcon.BackgroundTransparency = 1
-    heightIcon.Text = "🚀"
-    heightIcon.TextSize = 28
-    heightIcon.Parent = heightFrame
-
-    local heightLabel = Instance.new("TextLabel")
-    heightLabel.Name = "HeightLabel"
-    heightLabel.Size = UDim2.new(1, -50, 1, 0)
-    heightLabel.Position = UDim2.new(0, 45, 0, 0)
-    heightLabel.BackgroundTransparency = 1
-    heightLabel.TextColor3 = COLORS.White
-    heightLabel.Text = "0m"
-    heightLabel.TextSize = 24
-    heightLabel.Font = Enum.Font.GothamBold
-    heightLabel.TextXAlignment = Enum.TextXAlignment.Left
-    heightLabel.Parent = heightFrame
-
     -- コイン表示
     local coinsFrame = Instance.new("Frame")
     coinsFrame.Name = "CoinsFrame"
@@ -151,7 +116,7 @@ local function createMainUI(): ScreenGui
     coinsIcon.Size = UDim2.new(0, 40, 1, 0)
     coinsIcon.Position = UDim2.new(0, 5, 0, 0)
     coinsIcon.BackgroundTransparency = 1
-    coinsIcon.Text = "🪙"
+    coinsIcon.Text = "＄"
     coinsIcon.TextSize = 28
     coinsIcon.Parent = coinsFrame
 
@@ -166,41 +131,6 @@ local function createMainUI(): ScreenGui
     coinsLabel.Font = Enum.Font.GothamBold
     coinsLabel.TextXAlignment = Enum.TextXAlignment.Left
     coinsLabel.Parent = coinsFrame
-
-    -- グローバル高度表示
-    local globalFrame = Instance.new("Frame")
-    globalFrame.Name = "GlobalFrame"
-    globalFrame.Size = UDim2.new(0, 250, 0, 50)
-    globalFrame.Position = UDim2.new(1, -270, 0, 5)
-    globalFrame.BackgroundColor3 = COLORS.Lavender
-    globalFrame.BackgroundTransparency = 0.2
-    globalFrame.BorderSizePixel = 0
-    globalFrame.Parent = topBar
-
-    local globalCorner = Instance.new("UICorner")
-    globalCorner.CornerRadius = UDim.new(0, 12)
-    globalCorner.Parent = globalFrame
-
-    local globalIcon = Instance.new("TextLabel")
-    globalIcon.Name = "Icon"
-    globalIcon.Size = UDim2.new(0, 40, 1, 0)
-    globalIcon.Position = UDim2.new(0, 5, 0, 0)
-    globalIcon.BackgroundTransparency = 1
-    globalIcon.Text = "🌍"
-    globalIcon.TextSize = 28
-    globalIcon.Parent = globalFrame
-
-    local globalLabel = Instance.new("TextLabel")
-    globalLabel.Name = "GlobalLabel"
-    globalLabel.Size = UDim2.new(1, -50, 1, 0)
-    globalLabel.Position = UDim2.new(0, 45, 0, 0)
-    globalLabel.BackgroundTransparency = 1
-    globalLabel.TextColor3 = COLORS.Dark
-    globalLabel.Text = "全体: 0m"
-    globalLabel.TextSize = 20
-    globalLabel.Font = Enum.Font.GothamBold
-    globalLabel.TextXAlignment = Enum.TextXAlignment.Left
-    globalLabel.Parent = globalFrame
 
     -- ========================================
     -- クリティカル・ローンチUI（パワーゲージ）

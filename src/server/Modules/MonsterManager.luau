@@ -1,9 +1,13 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
+local constants = require("../Constants")
 
 -- タグ名の定義
 local MONSTER_TAG = "Monster"
+local SLOT_TAG = "SlotPart"
+
+local MonsterManager = {}
 
 -- モンスターが追加された時の処理
 local function UpdateMonsterUI(monsterModel)
@@ -65,7 +69,20 @@ end
 -- 新しく生成されたモンスターを監視
 CollectionService:GetInstanceAddedSignal(MONSTER_TAG):Connect(UpdateMonsterUI)
 
+-- プレイヤーが所有するスロットのMoney合算を取得
+function MonsterManager.GetSlotIncomePerSecond(player: Player): number
+    local totalMoney = 0
+    for _, slot in ipairs(CollectionService:GetTagged(SLOT_TAG)) do
+        if slot:GetAttribute("Owner") == player.UserId then
+            local monster = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+            totalMoney = totalMoney + (monster:GetAttribute("Money") or 0)
+        end
+    end
+    return totalMoney
+end
+
 return {
     SetInitStatus = SetInitStatus,
     UpdateMonsterUI = UpdateMonsterUI,
+    GetSlotIncomePerSecond = MonsterManager.GetSlotIncomePerSecond,
 }
