@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local CommonFunctions = require(script.Parent.CommonFunctions)
 local constants = require("../Constants")
 local DataManager = require(script.Parent.DataManager)
 
@@ -171,6 +172,8 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     if slimeTemplate then
         -- テンプレートからクローン
         charModel = slimeTemplate:Clone()
+        -- Weld自動生成
+        CommonFunctions.autoWeldModel(charModel)
         charModel.Name = constants.CHARACTER_MODEL_NAME
 
         -- レアリティに応じて色を変更

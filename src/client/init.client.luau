@@ -876,7 +876,7 @@ local function placeCharacter(slot)
     if not CarrySystem.isCarrying or not CarrySystem.heldModel then return false end
     -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
     -- RemoteFunctionを使って成否を受け取るのがスマートです
-    local success, errorMessage = RemoteFunctions.CharacterPlaceTry:InvokeServer(CarrySystem.heldModel, slot)
+    local success, errorMessage = RemoteFunctions.CharacterPlaceTry:InvokeServer(CarrySystem.heldModel.Name, slot.Name)
     if success then
         -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
         CarrySystem.weld = nil
@@ -895,7 +895,7 @@ local function removeFromSlot(slot)
     if CarrySystem.isCarrying and CarrySystem.heldModel then return true end
     -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
     -- RemoteFunctionを使って成否を受け取るのがスマートです
-    local data = RemoteFunctions.CharacterPickupTry:InvokeServer(slot)
+    local data = RemoteFunctions.CharacterPickupTry:InvokeServer(slot.Name)
     if data.success then
         -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
         print(string.format("[Client] heldModel: %s", data.heldModel.Name))
