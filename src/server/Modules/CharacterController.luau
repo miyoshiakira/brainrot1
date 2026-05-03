@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local CommonFunctions = require(script.Parent.CommonFunctions)
 local constants = require("../Constants")
 -- モジュール読み込み待機
@@ -22,8 +23,8 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
         return { success = false, error = "Invalid Request" }
     end
 
-    local characterId = heldModel:GetAttribute("CharacterId")
-    if not characterId or not profile.Characters[characterId] then
+    local monsterId = heldModel:GetAttribute("MonsterId")
+    if not monsterId or not profile.Characters[monsterId] then
         print('キャラクターID不正')
         return { success = false, error = "Character data missing" }
     end
@@ -45,25 +46,25 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
-    profile.ActiveCharacter = characterId
+    profile.ActiveCharacter = monsterId
     
     -- スロットの状態更新
-    print(string.format("[Server] Setting CharacterId to %s", characterId))
-    slot:SetAttribute("CharacterId", characterId)
+    print(string.format("[Server] Setting MonsterId to %s", monsterId))
+    slot:SetAttribute("MonsterId", monsterId)
     slot:SetAttribute("Occupied", true)
     slot:SetAttribute("Owner", player.UserId)
 
     -- ボーナス適用
-    local characterData = profile.Characters[characterId]
+    local characterData = profile.Characters[monsterId]
     if characterData and characterData.Bonus then
         profile.CharacterBonus = characterData.Bonus
     end
 
-    print(string.format("[Server] %s placed %s on %s", player.Name, characterId, slot.Name))
+    print(string.format("[Server] %s placed %s on %s", player.Name, monsterId, slot.Name))
 
     return {
         success = true,
-        activeCharacter = characterId,
+        activeCharacter = monsterId,
         characterBonus = profile.CharacterBonus
     }
 end
@@ -104,13 +105,13 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     profile.ActiveCharacter = nil
     
     -- スロットの状態更新
-    local characterId = slot:GetAttribute("CharacterId")
-    print(string.format("[Server] Getting CharacterId to %s", characterId))
-    slot:SetAttribute("CharacterId", nil)
+    local monsterId = slot:GetAttribute("MonsterId")
+    print(string.format("[Server] Getting MonsterId to %s", monsterId))
+    slot:SetAttribute("MonsterId", nil)
     slot:SetAttribute("Occupied", false)
     slot:SetAttribute("Owner", nil)
 
-    print(string.format("[Server] %s got %s on %s", player.Name, characterId, slot.Name))
+    print(string.format("[Server] %s got %s on %s", player.Name, monsterId, slot.Name))
 
     return {
         success = true,

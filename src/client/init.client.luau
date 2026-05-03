@@ -10,7 +10,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
+local _UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -67,7 +68,7 @@ local CarrySystem = {
 
 -- キャラクター収集状態
 local characterCollection = {}
-local activeCharacterId = nil
+local activeMonsterId = nil
 
 -- レアリティカラー
 local RARITY_COLORS = {
@@ -211,6 +212,7 @@ local function createMainUI(): ScreenGui
     launchContainer.BackgroundColor3 = COLORS.Dark
     launchContainer.BackgroundTransparency = 0.2
     launchContainer.BorderSizePixel = 0
+    launchContainer.Visible = false
     launchContainer.Parent = screenGui
 
     local launchCorner = Instance.new("UICorner")
@@ -638,8 +640,40 @@ local function updateGauge(dt: number)
     indicator.Position = UDim2.new(gaugeState.position, -4, 0, -2)
 end
 
+-- 発射台に乗っているか
+local isOnJumpPad = false
+
+-- 発射アクション（ContextActionServiceでプラットフォーム横断対応）
+local LAUNCH_ACTION_NAME = "LaunchAction"
+
+-- 前方宣言
+local performLaunch
+local bindLaunchAction
+local unbindLaunchAction
+
+bindLaunchAction = function()
+    ContextActionService:BindAction(
+        LAUNCH_ACTION_NAME,
+        function(actionName, inputState, inputObject)
+            if inputState == Enum.UserInputState.Begin then
+                performLaunch()
+            end
+        end,
+        true, -- mobileタップボタン表示
+        Enum.KeyCode.Return,
+        Enum.KeyCode.ButtonA
+    )
+    ContextActionService:SetTitle(LAUNCH_ACTION_NAME, "🚀 LAUNCH")
+    ContextActionService:SetPosition(LAUNCH_ACTION_NAME, UDim2.new(0.5, -100, 1, -80))
+end
+
+unbindLaunchAction = function()
+    ContextActionService:UnbindAction(LAUNCH_ACTION_NAME)
+end
+
 -- 発射処理
-local function performLaunch()
+performLaunch = function()
+    if not isOnJumpPad then return end
     if not gaugeState.isActive then
         -- ゲージを開始
         gaugeState.isActive = true
@@ -653,6 +687,17 @@ local function performLaunch()
         -- 発射！
         gaugeState.isActive = false
         RemoteEvents.LaunchRequest:FireServer(gaugeState.position)
+
+        -- UI非表示 + 状態リセット（再度Eキーで起動可能に）
+        isOnJumpPad = false
+        unbindLaunchAction()
+        local ui = playerGui:FindFirstChild("BrainrotUI")
+        if ui then
+            local launchContainer = ui:FindFirstChild("LaunchContainer")
+            if launchContainer then
+                launchContainer.Visible = false
+            end
+        end
     end
 end
 
@@ -787,7 +832,7 @@ local function updateCharacterList()
     -- 各キャラクターのカードを作成
     for _, charDef in ipairs(allChars) do
         local charData = characterCollection[charDef.Id]
-        local isActive = activeCharacterId == charDef.Id
+        local isActive = activeMonsterId == charDef.Id
 
         if charData then
             -- 所持しているキャラクター
@@ -855,7 +900,7 @@ local function resetCarryState()
     CarrySystem.isCarrying = false
 end
 
-local function pickupCharacter(targetModel, characterId, weld)
+local function pickupCharacter(targetModel, monsterId, weld)
     if CarrySystem.isCarrying then return false end
 
     local character = player.Character
@@ -867,7 +912,7 @@ local function pickupCharacter(targetModel, characterId, weld)
     CarrySystem.weld = weld
     CarrySystem.isCarrying = true
 
-    print("[CarrySystem] 複製して拾い上げました:", characterId)
+    print("[CarrySystem] 複製して拾い上げました:", monsterId)
     print(string.format("[CarrySystem] %s", CarrySystem.heldModel.Name))
     return true
 end
@@ -965,14 +1010,6 @@ if characterPanel then
     end
 end
 
--- キーボードでも発射可能（スペースキー）
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.Space then
-        performLaunch()
-    end
-end)
-
 -- サーバーイベント受信
 RemoteEvents.MoneyChanged.OnClientEvent:Connect(function(newMoney)
     updateCoinsDisplay(newMoney)
@@ -1021,11 +1058,11 @@ RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
 
     local modelName = data.Model.Name
     local weld = data.Weld
-    local characterId = data.CharacterId
+    local monsterId = data.MonsterId
     local model = data.Model
 
     if model then
-        pickupCharacter(model, characterId, weld)
+        pickupCharacter(model, monsterId, weld)
     else
         warn("[CharacterSpawned] モデルが見つかりません:", modelName)
     end
@@ -1034,8 +1071,8 @@ end)
 RemoteFunctions.SlotActionTrigger.OnClientInvoke = function(data)
     -- TODO: キャラクターをスロットに配置する処理を追加
     local slot = data.Slot
-    local characterId = slot:GetAttribute("CharacterId")
-    if characterId then
+    local monsterId = slot:GetAttribute("MonsterId")
+    if monsterId then
         -- とりあげる
         return removeFromSlot(slot)
     else
@@ -1045,8 +1082,37 @@ RemoteFunctions.SlotActionTrigger.OnClientInvoke = function(data)
     
 end
 
+-- 発射台アクション
+RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
+    local ui = playerGui:FindFirstChild("BrainrotUI")
+    if not ui then return nil end
+
+    local launchContainer = ui:FindFirstChild("LaunchContainer")
+    if not launchContainer then return nil end
+
+    -- 運搬中は発射不可
+    if CarrySystem.isCarrying then
+        showNotification("⚠️ 運搬中", "キャラクターを置いてから発射してください", COLORS.Yellow)
+        return false
+    end
+
+    -- 表示/非表示を切り替え
+    if launchContainer.Visible then
+        launchContainer.Visible = false
+        isOnJumpPad = false
+        gaugeState.isActive = false
+        unbindLaunchAction()
+    else
+        launchContainer.Visible = true
+        isOnJumpPad = true
+        bindLaunchAction()
+    end
+
+    return true
+end
+
 RemoteEvents.CharacterSelected.OnClientEvent:Connect(function(charId, newBonus)
-    activeCharacterId = charId
+    activeMonsterId = charId
     updateCharacterList()
 end)
 
@@ -1083,7 +1149,7 @@ task.spawn(function()
     local collection = RemoteEvents.GetCharacterCollection:InvokeServer()
     if collection then
         characterCollection = collection.Characters or {}
-        activeCharacterId = collection.ActiveCharacter
+        activeMonsterId = collection.ActiveCharacter
     end
 end)
 

@@ -117,9 +117,9 @@ local function setupSlot(slot)
         local success = RemoteFunctions.SlotActionTrigger:InvokeClient(player, {
             Slot = slot,
         })
-        local characterId = slot:GetAttribute("CharacterId")
-        print(string.format("characterId: %s", tostring(characterId)))
-        if characterId then
+        local monsterId = slot:GetAttribute("MonsterId")
+        print(string.format("monsterId: %s", tostring(monsterId)))
+        if monsterId then
             prompt.ActionText = "ひろう"
         else
             prompt.ActionText = "配置する"
@@ -134,5 +134,28 @@ end
 
 -- 後から生成されたスロットにも自動適用（エンジニアらしい設計）
 CollectionService:GetInstanceAddedSignal("SlotPart"):Connect(setupSlot)
+
+
+-- JumpPadの挙動を初期化する関数
+local function setupJumpPad(jumpPad)
+    local prompt = Instance.new("ProximityPrompt")
+    prompt.Parent = jumpPad
+    prompt.ObjectText = "発射台"
+    prompt.ActionText = "発射する"
+    prompt.Triggered:Connect(function(player)
+        -- クライアントにUI表示を依頼
+        local _success = RemoteFunctions.JumpPadAction:InvokeClient(player, {
+            JumpPad = jumpPad,
+        })
+    end)
+end
+
+-- 既存の全JumpPadに適用
+for _, jumpPad in ipairs(CollectionService:GetTagged("JumpPad")) do
+    setupJumpPad(jumpPad)
+end
+
+-- 後から生成されたJumpPadにも自動適用
+CollectionService:GetInstanceAddedSignal("JumpPad"):Connect(setupJumpPad)
 
 print("[Server] 初期化完了")

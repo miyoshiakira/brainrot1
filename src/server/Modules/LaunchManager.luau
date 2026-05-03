@@ -148,7 +148,7 @@ function LaunchManager.CalculateLaunchHeight(player: Player, gaugePosition: numb
 end
 
 -- キャラクター3Dモデルを生成してプレイヤーに持たせる
-function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
+function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
     local character = player.Character
     if not character then return nil end
 
@@ -156,7 +156,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     if not humanoidRootPart then return nil end
 
     -- キャラクター定義を取得
-    local charDef = BrainrotCharacters.GetCharacterById(characterId)
+    local charDef = BrainrotCharacters.GetCharacterById(monsterId)
     if not charDef then return nil end
 
     -- レアリティカラーを取得
@@ -209,8 +209,8 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     end
 
     -- キャラクター情報を属性として保存
-    charModel:SetAttribute("CharacterId", characterId)
-    charModel:SetAttribute("CharacterName", charDef.Name)
+    charModel:SetAttribute("MonsterId", monsterId)
+    charModel:SetAttribute("MonsterName", charDef.Name)
     charModel:SetAttribute("Rarity", charDef.Rarity)
     charModel:SetAttribute("OwnerId", player.UserId)
 
@@ -231,8 +231,8 @@ function LaunchManager.SpawnCharacterModel(player: Player, characterId: string)
     RemoteEvents.CharacterSpawned:FireClient(player, {
         ModelName = charModel.Name,
         Model = charModel,
-        CharacterId = characterId,
-        CharacterName = charDef.Name,
+        MonsterId = monsterId,
+        MonsterName = charDef.Name,
         Rarity = charDef.Rarity,
         Weld = weld,
     })
@@ -373,7 +373,7 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): boo
     DataManager.AddMoney(player, coinsEarned)
 
     -- キャラクタードロップ判定
-    local droppedCharacterId = LaunchManager.TryCharacterDrop(player, criticalType)
+    local droppedMonsterId = LaunchManager.TryCharacterDrop(player, criticalType)
 
     -- グローバル高度を更新
     GlobalState.TotalHeight = GlobalState.TotalHeight + height
@@ -389,12 +389,12 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): boo
         TotalHeight = profile.Height,
         CoinsEarned = coinsEarned,
         IsRainbowRain = GlobalState.IsRainbowRain,
-        DroppedCharacter = droppedCharacterId,
+        DroppedCharacter = droppedMonsterId,
     })
 
     -- キャラクター獲得通知
-    if droppedCharacterId then
-        local charData = profile.Characters[droppedCharacterId]
+    if droppedMonsterId then
+        local charData = profile.Characters[droppedMonsterId]
         if charData then
             RemoteEvents.CharacterCollected:FireClient(player, charData)
         end
@@ -485,29 +485,29 @@ function LaunchManager.GetGlobalStats()
 end
 
 -- キャラクター選択
-function LaunchManager.SelectCharacter(player: Player, characterId: string): boolean
+function LaunchManager.SelectCharacter(player: Player, monsterId: string): boolean
     local profile = DataManager.GetProfile(player)
     if not profile then return false end
 
-    if not profile.Characters or not profile.Characters[characterId] then
+    if not profile.Characters or not profile.Characters[monsterId] then
         return false
     end
 
-    profile.ActiveCharacter = characterId
+    profile.ActiveCharacter = monsterId
     LaunchManager.RecalculateCharacterBonus(player)
 
     -- クライアントに通知
-    RemoteEvents.CharacterSelected:FireClient(player, characterId, profile.CharacterBonus)
+    RemoteEvents.CharacterSelected:FireClient(player, monsterId, profile.CharacterBonus)
 
     return true
 end
 
 -- キャラクター育成（レベルアップ）
-function LaunchManager.UpgradeCharacter(player: Player, characterId: string): boolean
+function LaunchManager.UpgradeCharacter(player: Player, monsterId: string): boolean
     local profile = DataManager.GetProfile(player)
     if not profile then return false end
 
-    local char = profile.Characters and profile.Characters[characterId]
+    local char = profile.Characters and profile.Characters[monsterId]
     if not char then return false end
 
     -- レベルアップコスト計算
@@ -525,7 +525,7 @@ function LaunchManager.UpgradeCharacter(player: Player, characterId: string): bo
     LaunchManager.RecalculateCharacterBonus(player)
 
     -- クライアントに通知
-    RemoteEvents.CharacterUpgraded:FireClient(player, characterId, char.Level, profile.CharacterBonus)
+    RemoteEvents.CharacterUpgraded:FireClient(player, monsterId, char.Level, profile.CharacterBonus)
 
     return true
 end
@@ -543,8 +543,8 @@ function LaunchManager.GetCharacterCollection(player: Player)
     }
 end
 
-function LaunchManager.CharacterPickedUp(player: Player, characterId: string)
-    print(string.format("[LaunchManager] %s が %s を所有", player.Name, characterId))
+function LaunchManager.CharacterPickedUp(player: Player, monsterId: string)
+    print(string.format("[LaunchManager] %s が %s を所有", player.Name, monsterId))
 end
 
 -- 初期化
@@ -565,22 +565,22 @@ function LaunchManager.Initialize()
     end
 
     -- キャラクター選択
-    RemoteEvents.CharacterSelected.OnServerEvent:Connect(function(player, characterId)
-        LaunchManager.SelectCharacter(player, characterId)
+    RemoteEvents.CharacterSelected.OnServerEvent:Connect(function(player, monsterId)
+        LaunchManager.SelectCharacter(player, monsterId)
     end)
     
     -- キャラクターを手元に拾う
-    RemoteEvents.CharacterPickedUp.OnServerEvent:Connect(function(player, characterId)
-        LaunchManager.CharacterPickedUp(player, characterId)
+    RemoteEvents.CharacterPickedUp.OnServerEvent:Connect(function(player, monsterId)
+        LaunchManager.CharacterPickedUp(player, monsterId)
     end)
     -- キャラクター育成
-    RemoteEvents.CharacterUpgraded.OnServerEvent:Connect(function(player, characterId)
-        LaunchManager.UpgradeCharacter(player, characterId)
+    RemoteEvents.CharacterUpgraded.OnServerEvent:Connect(function(player, monsterId)
+        LaunchManager.UpgradeCharacter(player, monsterId)
     end)
 
     -- キャラクター取り外し
-    RemoteEvents.CharacterRemoved.OnServerEvent:Connect(function(player, characterId, slotName)
-        print(string.format("[LaunchManager] %s が %s を %s から取り外し", player.Name, characterId, slotName))
+    RemoteEvents.CharacterRemoved.OnServerEvent:Connect(function(player, monsterId, slotName)
+        print(string.format("[LaunchManager] %s が %s を %s から取り外し", player.Name, monsterId, slotName))
     end)
 
     print("[LaunchManager] 初期化完了")

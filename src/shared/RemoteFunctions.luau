@@ -33,4 +33,5 @@ end
 RemoteFunctions.CharacterPlaceTry = getOrCreateRemoteFunction("CharacterPlaceTry")  -- キャラクターをスロットに配置
 RemoteFunctions.CharacterPickupTry = getOrCreateRemoteFunction("CharacterPickupTry")  -- キャラクターをスロットからひろうイベント
 RemoteFunctions.SlotActionTrigger = getOrCreateRemoteFunction("SlotActionTrigger")  -- キャラクターをスロットに配置のイベント
+RemoteFunctions.JumpPadAction = getOrCreateRemoteFunction("JumpPadAction")  -- 発射台アクション
 return RemoteFunctions
