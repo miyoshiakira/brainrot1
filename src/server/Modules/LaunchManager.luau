@@ -12,11 +12,12 @@ local RunService = game:GetService("RunService")
 local CommonFunctions = require(script.Parent.CommonFunctions)
 local constants = require("../Constants")
 local DataManager = require(script.Parent.DataManager)
+local MonsterManager = require(script.Parent.MonsterManager)
 
 -- RemoteEvents待機
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
-local BrainrotCharacters = require(ReplicatedStorage.Shared.BrainrotCharacters).BrainrotCharacters
+local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters).BrainrotMonsters
 
 local LaunchManager = {}
 LaunchManager.__index = LaunchManager
@@ -156,16 +157,16 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
     if not humanoidRootPart then return nil end
 
     -- キャラクター定義を取得
-    local charDef = BrainrotCharacters.GetCharacterById(monsterId)
+    local charDef = BrainrotMonsters.GetCharacterById(monsterId)
     if not charDef then return nil end
 
     -- レアリティカラーを取得
-    local rarityConfig = BrainrotCharacters.GetRarityConfig(charDef.Rarity)
+    local rarityConfig = BrainrotMonsters.GetRarityConfig(charDef.Rarity)
     local charColor = rarityConfig and rarityConfig.Color or Color3.fromRGB(255, 255, 255)
 
     -- スライムテンプレートを取得
     local templatesFolder = ReplicatedStorage:FindFirstChild("CharacterTemplates")
-    local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild("CuteSlimeTemplate")
+    local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild(charDef.ModelName)
 
     local charModel
 
@@ -209,9 +210,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
     end
 
     -- キャラクター情報を属性として保存
-    charModel:SetAttribute("MonsterId", monsterId)
-    charModel:SetAttribute("MonsterName", charDef.Name)
-    charModel:SetAttribute("Rarity", charDef.Rarity)
+    MonsterManager.SetInitStatus(charModel, monsterId)
     charModel:SetAttribute("OwnerId", player.UserId)
 
     -- PrimaryPartを取得（Weld用）
@@ -264,31 +263,31 @@ function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): s
     end
 
     -- レアリティ決定
-    local rarity = BrainrotCharacters.RollCharacter(GlobalState.IsRainbowRain)
+    local rarity = BrainrotMonsters.RollCharacter(GlobalState.IsRainbowRain)
     if not rarity then return nil end
 
     -- そのレアリティのキャラクターからランダム選択
-    local characters = BrainrotCharacters.GetCharactersByRarity(rarity)
+    local characters = BrainrotMonsters.GetCharactersByRarity(rarity)
     if #characters == 0 then return nil end
 
     local selectedChar = characters[math.random(1, #characters)]
-    local bonus = BrainrotCharacters.GenerateBonus(rarity)
+    local bonus = BrainrotMonsters.GenerateBonus(rarity)
 
     -- プロファイルに追加
     if not profile.Characters then
         profile.Characters = {}
     end
 
-    local existingChar = profile.Characters[selectedChar.Id]
+    local existingChar = profile.Characters[selectedChar.MonsterId]
     if existingChar then
         -- 既に所持している場合はカウント増加
         existingChar.Count = existingChar.Count + 1
         existingChar.Bonus = math.max(existingChar.Bonus, bonus)  -- より高いボーナスを保持
     else
         -- 新規キャラクター
-        profile.Characters[selectedChar.Id] = {
-            Id = selectedChar.Id,
-            Name = selectedChar.Name,
+        profile.Characters[selectedChar.MonsterId] = {
+            Id = selectedChar.MonsterId,
+            Name = selectedChar.MonsterName,
             Rarity = rarity,
             Bonus = bonus,
             Level = 1,
@@ -304,16 +303,16 @@ function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): s
 
     -- アクティブキャラクターが未設定の場合は最初のキャラを設定
     if not profile.ActiveCharacter then
-        profile.ActiveCharacter = selectedChar.Id
+        profile.ActiveCharacter = selectedChar.MonsterId
     end
 
     -- キャラクターボーナスを再計算
     LaunchManager.RecalculateCharacterBonus(player)
 
     -- 3Dモデルを生成してプレイヤーに持たせる
-    LaunchManager.SpawnCharacterModel(player, selectedChar.Id)
+    LaunchManager.SpawnCharacterModel(player, selectedChar.MonsterId)
 
-    return selectedChar.Id
+    return selectedChar.MonsterId
 end
 
 -- キャラクターボーナス再計算

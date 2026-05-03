@@ -1,5 +1,5 @@
 --[[
-    BrainrotCharacters
+    BrainrotMonsters
     ブレインロットキャラクター定義
     ポップでかわいいキャラクターリスト
 ]]
@@ -41,53 +41,34 @@ local RARITY_CONFIG = {
 -- キャラクター定義
 local CHARACTERS = {
     -- Common
-    {Id = "skibidi", Name = "Skibidi Cat", Rarity = "Common", Emoji = "🐱"},
-    {Id = "rizz", Name = "Rizz Hamster", Rarity = "Common", Emoji = "🐹"},
-    {Id = "gyatt", Name = "Gyatt Bunny", Rarity = "Common", Emoji = "🐰"},
-    {Id = "fanum", Name = "Fanum Fox", Rarity = "Common", Emoji = "🦊"},
-    {Id = "sigma", Name = "Sigma Frog", Rarity = "Common", Emoji = "🐸"},
-
-    -- Rare
-    {Id = "mewing", Name = "Mewing Owl", Rarity = "Rare", Emoji = "🦉"},
-    {Id = "griddy", Name = "Griddy Penguin", Rarity = "Rare", Emoji = "🐧"},
-    {Id = "bussin", Name = "Bussin Panda", Rarity = "Rare", Emoji = "🐼"},
-    {Id = "cap", Name = "No Cap Koala", Rarity = "Rare", Emoji = "🐨"},
-
-    -- Epic
-    {Id = "ohio", Name = "Ohio Dragon", Rarity = "Epic", Emoji = "🐉"},
-    {Id = "gooning", Name = "Gooning Unicorn", Rarity = "Epic", Emoji = "🦄"},
-    {Id = "npc", Name = "NPC King", Rarity = "Epic", Emoji = "👑"},
-
-    -- Legendary
-    {Id = "alpha", Name = "Alpha Titan", Rarity = "Legendary", Emoji = "🦁"},
-    {Id = "beta", Name = "Beta Phoenix", Rarity = "Legendary", Emoji = "🔥"},
-
-    -- Rainbow
-    {Id = "rainbow_supreme", Name = "Rainbow Supreme", Rarity = "Rainbow", Emoji = "🌈"},
-    {Id = "cosmic_brainrot", Name = "Cosmic Brainrot", Rarity = "Rainbow", Emoji = "⭐"},
+    {MonsterId = "Cute_Slime", MonsterName = "キャワスライム", ModelName = "CuteSlimeTemplate", Rarity = "Common", Money = 1.0},
+    {MonsterId = "Rare_Slime", MonsterName = "レアスライム", ModelName = "CuteSlimeTemplate", Rarity = "Rare", Money = 1.0},
+    {MonsterId = "Epic_Slime", MonsterName = "すごスライム", ModelName = "CuteSlimeTemplate", Rarity = "Epic", Money = 1.0},
+    {MonsterId = "Legendary_Slime", MonsterName = "伝説スライム", ModelName = "CuteSlimeTemplate", Rarity = "Legendary", Money = 1.0},
+    {MonsterId = "Rainbow_Slime", MonsterName = "七色スライム", ModelName = "CuteSlimeTemplate", Rarity = "Rainbow", Money = 1.0},
 }
 
 -- ユーティリティ関数
-local BrainrotCharacters = {}
+local BrainrotMonsters = {}
 
-function BrainrotCharacters.GetRarityConfig(rarity)
+function BrainrotMonsters.GetRarityConfig(rarity)
     return RARITY_CONFIG[rarity]
 end
 
-function BrainrotCharacters.GetAllCharacters()
+function BrainrotMonsters.GetAllCharacters()
     return CHARACTERS
 end
 
-function BrainrotCharacters.GetCharacterById(id)
+function BrainrotMonsters.GetCharacterById(id)
     for _, char in ipairs(CHARACTERS) do
-        if char.Id == id then
+        if char.MonsterId == id then
             return char
         end
     end
     return nil
 end
 
-function BrainrotCharacters.GetCharactersByRarity(rarity)
+function BrainrotMonsters.GetCharactersByRarity(rarity)
     local result = {}
     for _, char in ipairs(CHARACTERS) do
         if char.Rarity == rarity then
@@ -97,7 +78,7 @@ function BrainrotCharacters.GetCharactersByRarity(rarity)
     return result
 end
 
-function BrainrotCharacters.RollCharacter(isRainbowRain)
+function BrainrotMonsters.RollCharacter(isRainbowRain)
     local roll = math.random()
 
     if isRainbowRain then
@@ -127,7 +108,7 @@ function BrainrotCharacters.RollCharacter(isRainbowRain)
     end
 end
 
-function BrainrotCharacters.GenerateBonus(rarity)
+function BrainrotMonsters.GenerateBonus(rarity)
     local config = RARITY_CONFIG[rarity]
     if not config then return 10 end
 
@@ -136,12 +117,12 @@ function BrainrotCharacters.GenerateBonus(rarity)
 end
 
 return {
-    BrainrotCharacters = BrainrotCharacters,
+    BrainrotMonsters = BrainrotMonsters,
     RARITY_CONFIG = RARITY_CONFIG,
     CHARACTERS = CHARACTERS,
-    GetCharacterById = BrainrotCharacters.GetCharacterById,
-    GetRarityConfig = BrainrotCharacters.GetRarityConfig,
-    GetCharactersByRarity = BrainrotCharacters.GetCharactersByRarity,
-    RollCharacter = BrainrotCharacters.RollCharacter,
-    GenerateBonus = BrainrotCharacters.GenerateBonus,
+    GetCharacterById = BrainrotMonsters.GetCharacterById,
+    GetRarityConfig = BrainrotMonsters.GetRarityConfig,
+    GetCharactersByRarity = BrainrotMonsters.GetCharactersByRarity,
+    RollCharacter = BrainrotMonsters.RollCharacter,
+    GenerateBonus = BrainrotMonsters.GenerateBonus,
 }

@@ -826,7 +826,7 @@ local function updateCharacterList()
     end
 
     -- キャラクターデータを取得
-    local charModule = require(ReplicatedStorage.Shared.BrainrotCharacters)
+    local charModule = require(ReplicatedStorage.Shared.BrainrotMonsters)
     local allChars = charModule.CHARACTERS
 
     -- 各キャラクターのカードを作成
