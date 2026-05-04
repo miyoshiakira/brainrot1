@@ -27,7 +27,8 @@
       "mcp__robloxstudio__get_place_info",
       "Bash(.rojo.exe --version:*)",
       "Bash(\"D:\\\\Git\\\\roblox_git\\\\rojo.exe\" --version)",
-      "Bash(\"D:\\\\Git\\\\roblox_git\\\\rojo.exe\" --help)"
+      "Bash(\"D:\\\\Git\\\\roblox_git\\\\rojo.exe\" --help)",
+      "Bash(git checkout:*)"
     ]
   }
 }
