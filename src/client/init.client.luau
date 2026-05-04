@@ -667,6 +667,9 @@ end
 -- 発射処理
 performLaunch = function()
     if not isOnJumpPad then return end
+
+    local character = player.Character
+    local humanoid = character:WaitForChild("Humanoid")
     if not gaugeState.isActive then
         -- ゲージを開始
         gaugeState.isActive = true
@@ -679,7 +682,22 @@ performLaunch = function()
     else
         -- 発射！
         gaugeState.isActive = false
-        RemoteEvents.LaunchRequest:FireServer(gaugeState.position)
+        -- 物理的にプレイヤーを吹き飛ばす
+        local height = RemoteEvents.LaunchRequest:InvokeServer(gaugeState.position)
+        if character then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart and humanoid then
+                -- LocalScript内
+                local launchVelocity = math.sqrt(2 * workspace.Gravity * height)
+
+                -- サーバー側
+                -- 修正後（プロパティとして取得）
+                local mass = humanoidRootPart.AssemblyMass
+                humanoidRootPart:ApplyImpulse(Vector3.new(0, launchVelocity * mass, 0))
+                
+                print(string.format("[LaunchManager] 発射速度: %.1f studs/s (目標高度: %.1fm)", launchVelocity, height))
+            end
+        end
 
         -- UI非表示 + 状態リセット（再度Eキーで起動可能に）
         isOnJumpPad = false
@@ -689,6 +707,9 @@ performLaunch = function()
             local launchContainer = ui:FindFirstChild("LaunchContainer")
             if launchContainer then
                 launchContainer.Visible = false
+                if humanoid then
+                    humanoid.WalkSpeed = 16
+                end
             end
         end
     end
@@ -1109,6 +1130,10 @@ RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
         return false
     end
 
+    -- 移動を復帰
+    local character = player.Character
+    local humanoid = character:FindFirstChild("Humanoid")
+
     -- 表示/非表示を切り替え
     if launchContainer.Visible then
         launchContainer.Visible = false
@@ -1118,6 +1143,9 @@ RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
     else
         launchContainer.Visible = true
         isOnJumpPad = true
+        if humanoid then
+            humanoid.WalkSpeed = 0
+        end
         bindLaunchAction()
     end
 

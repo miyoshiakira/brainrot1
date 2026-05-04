@@ -297,24 +297,24 @@ function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): s
 end
 
 -- 発射処理
-function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): boolean
+function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): {success: boolean, height: number}
     -- クールダウンチェック
     local now = tick()
     local lastLaunch = PlayerCooldowns[player] or 0
     if now - lastLaunch < LAUNCH_CONFIG.LaunchCooldown then
-        return false
+        return {success = false, height = 0}
     end
     PlayerCooldowns[player] = now
 
     -- ゲージ位置の検証（0-1の範囲内か）
     if gaugePosition < 0 or gaugePosition > 1 then
         warn("[LaunchManager] 不正なゲージ位置:", player.Name, gaugePosition)
-        return false
+        return {success = false, height = 0}
     end
 
     local profile = DataManager.GetProfile(player)
     if not profile then
-        return false
+        return {success = false, height = 0}
     end
 
     -- 発射高度を計算
@@ -384,7 +384,7 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): boo
         player.Name, height, criticalType, multiplier, profile.Height, profile.LegPower,
         isMegaJump and " MEGA JUMP!!" or ""))
 
-    return true
+    return {success = true, height = height}
 end
 
 -- Rainbow Rain判定
@@ -488,9 +488,13 @@ end
 -- 初期化
 function LaunchManager.Initialize()
     -- 発射リクエスト受信
-    RemoteEvents.LaunchRequest.OnServerEvent:Connect(function(player, gaugePosition)
-        LaunchManager.ProcessLaunch(player, gaugePosition)
-    end)
+    RemoteEvents.LaunchRequest.OnServerInvoke = function(player, gaugePosition)
+        local data = LaunchManager.ProcessLaunch(player, gaugePosition)
+        if data.success then
+            return data.height
+        end
+        return nil
+    end
 
     -- グローバル統計取得
     RemoteEvents.GetGlobalStats.OnServerInvoke = function(player)

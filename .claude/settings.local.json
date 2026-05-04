@@ -28,7 +28,8 @@
       "Bash(.rojo.exe --version:*)",
       "Bash(\"D:\\\\Git\\\\roblox_git\\\\rojo.exe\" --version)",
       "Bash(\"D:\\\\Git\\\\roblox_git\\\\rojo.exe\" --help)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "mcp__robloxstudio__search_files"
     ]
   }
 }
