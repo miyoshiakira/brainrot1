@@ -213,7 +213,6 @@ task.spawn(function()
         task.wait(1)
         for _, player in ipairs(game.Players:GetPlayers()) do
             local income = MonsterManager.GetSlotIncomePerSecond(player)
-            print("Income:".. income)
             if income > 0 then
                 -- ここで属性を更新するだけで、上のConnectした関数が自動で動く！
                 if moneyBox then
