@@ -1,18 +1,16 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
-local constants = require("../Constants")
 
 -- タグ名の定義
 local MONSTER_TAG = "Monster"
-local SLOT_TAG = "SlotPart"
 
 local MonsterManager = {}
 
 -- モンスターが追加された時の処理
-local function UpdateMonsterUI(monsterModel)
+local function UpdateMonsterUI(monsterModel: Instance)
     if not monsterModel then return end
-    print("UpdateMonsterUI: " .. monsterModel.Name)
+    print("UpdateMonsterUI: " , monsterModel)
     -- UIコンポーネントの取得
     -- ※画像に基づき、StatsDisplay > Container > StatsFrame > 各項目 と辿る
     local statsDisplay = monsterModel:FindFirstChild("StatsDisplay")
@@ -26,7 +24,6 @@ local function UpdateMonsterUI(monsterModel)
         -- 本来はここでモンスターの固有ステータス（Attributesなど）を取得します
         local monsterName = monsterModel:GetAttribute("MonsterName")
         local monsterLevel = monsterModel:GetAttribute("Level")
-        local monsterMoney = monsterModel:GetAttribute("Money")
         local monsterRarity = monsterModel:GetAttribute("Rarity")
 
         -- 属性が未設定の場合はスキップ（SetInitStatus呼び出し前にタグが付いた場合）
@@ -39,7 +36,8 @@ local function UpdateMonsterUI(monsterModel)
         end
         
         if statsFrame:FindFirstChild("Money") then
-            statsFrame.Money.Text = string.format("%d $/s", monsterMoney or 0)
+            local AllMoney = MonsterManager.CalcIncomePerSecond(monsterModel)
+            statsFrame.Money.Text = string.format("%d $/s", AllMoney)
         end
 
         if statsFrame:FindFirstChild("Rarity") then
@@ -59,6 +57,20 @@ local function SetInitStatus(monsterModel, monsterId, modelName)
     monsterModel:SetAttribute("Level", monsterStatusModel.Level or 1)
     monsterModel:SetAttribute("Money", monsterStatusModel.Money)
     monsterModel:SetAttribute("Rarity", monsterStatusModel.Rarity)
+    UpdateMonsterUI(monsterModel)
+end
+
+-- モンスターのステータスをマッピング
+function MonsterManager.MappingStatus(monsterInfo, monsterModel)
+    if not monsterInfo or not monsterModel then
+        return
+    end
+    monsterModel:SetAttribute("MonsterId", monsterInfo.MonsterId)
+    monsterModel:SetAttribute("ModelName", monsterInfo.ModelName)
+    monsterModel:SetAttribute("MonsterName", monsterInfo.MonsterName)
+    monsterModel:SetAttribute("Level", monsterInfo.Level)
+    monsterModel:SetAttribute("Money", monsterInfo.Money)
+    monsterModel:SetAttribute("Rarity", monsterInfo.Rarity)
     UpdateMonsterUI(monsterModel)
 end
 
@@ -88,31 +100,58 @@ function MonsterManager.SetupCharModel(charModel: Instance, rarity: string)
     end
 end
 
--- すでに存在しているモンスターを処理
-for _, monsterModel in ipairs(CollectionService:GetTagged(MONSTER_TAG)) do
-    UpdateMonsterUI(monsterModel)
+-- レアリティ倍率
+local RARITY_MULTIPLIER: {[string]: number} = {
+    Common = 1.0,
+    Rare = 1.5,
+    Epic = 2.0,
+    Legendary = 3.5,
+    Rainbow = 5.0,
+}
+
+-- キャラクターモデルの1秒あたり総合収入を算出
+-- 総合収入 = 基本収入(Money) × レベル × レアリティ倍率
+function MonsterManager.CalcIncomePerSecond(charModel: Instance): number
+    if not charModel then return 0 end
+
+    local baseMoney = charModel:GetAttribute("Money") or 0
+    local level = charModel:GetAttribute("Level") or 1
+    local rarity = charModel:GetAttribute("Rarity") or "Common"
+    local rarityMul = RARITY_MULTIPLIER[rarity] or 1.0
+
+    return baseMoney * level * rarityMul
+end
+
+-- キャラクターモデルの強化コスト
+function MonsterManager.GetUpgradeCost(charModel: Instance): number
+    if not charModel then return 0 end
+
+    local baseMoney = charModel:GetAttribute("Money") or 0
+    local level = charModel:GetAttribute("Level") or 1
+    local rarity = charModel:GetAttribute("Rarity") or "Common"
+    local rarityMul = RARITY_MULTIPLIER[rarity] or 1.0
+
+    return baseMoney * level * rarityMul * 10
 end
 
 -- 新しく生成されたモンスターを監視
 CollectionService:GetInstanceAddedSignal(MONSTER_TAG):Connect(UpdateMonsterUI)
 
--- プレイヤーが所有するスロットのMoney合算を取得
-function MonsterManager.GetSlotIncomePerSecond(player: Player): number
-    local totalMoney = 0
-    for _, slot in ipairs(CollectionService:GetTagged(SLOT_TAG)) do
-        if slot:GetAttribute("Owner") == player.UserId then
-            local monster = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
-            if monster then
-                totalMoney = totalMoney + (monster:GetAttribute("Money") or 0)
-            end
-        end
-    end
-    return totalMoney
+-- キャラクターモデルのStatusPanelを更新（外部から呼び出し用）
+function MonsterManager.UpdateStatusPanel(charModel: Instance)
+    UpdateMonsterUI(charModel)
 end
+
+-- プレイヤーが所有するスロットのMoney合算を取得
+-- ※この関数はPlayerBaseControllerに移動しました（循環依存回避のため）
+-- PlayerBaseController.GetSlotIncomePerSecond を使用してください
 
 return {
     SetInitStatus = SetInitStatus,
     SetupCharModel = MonsterManager.SetupCharModel,
+    UpdateStatusPanel = MonsterManager.UpdateStatusPanel,
     UpdateMonsterUI = UpdateMonsterUI,
-    GetSlotIncomePerSecond = MonsterManager.GetSlotIncomePerSecond,
+    CalcIncomePerSecond = MonsterManager.CalcIncomePerSecond,
+    MappingStatus = MonsterManager.MappingStatus,
+    GetUpgradeCost = MonsterManager.GetUpgradeCost,
 }

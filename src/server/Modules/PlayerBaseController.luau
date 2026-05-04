@@ -1,10 +1,9 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CommonFunctions = require(script.Parent.CommonFunctions)
 local DataManager = require(script.Parent.DataManager)
 local MonsterManager = require(script.Parent.MonsterManager)
-local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 local constants = require("../Constants")
 
@@ -92,6 +91,74 @@ function setUpMoneyBox(player)
     end
 end
 
+-- キャラクターのレベルを強化
+local function upgradeCharacter(player, UpgradeButton, upgradeCost)
+    local character = UpgradeButton.Parent:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+    if not character then
+        return { success = false, error = "No character on slot" }
+    end
+
+    local currentLevel = character:GetAttribute("Level") or 1
+
+    -- お金の減算（残高不足なら失敗）
+    local success = DataManager.SpendMoney(player, upgradeCost)
+    if not success then
+        return { success = false, error = "Not enough money", cost = upgradeCost }
+    end
+    print("UpgradeButtonActionTrigger - Money spent")
+    -- レベルアップ
+    character:SetAttribute("Level", currentLevel + 1)
+
+    print(string.format("[Upgrade] %s: Lv.%d → Lv.%d (cost: %d)", character.Name, currentLevel, currentLevel + 1, upgradeCost))
+
+    -- スロットデータを保存
+    local slots = PlayerBaseController.FindPlayerSlots(player)
+    DataManager.SaveSlotData(player, slots)
+
+    return character
+end
+
+local upgradeConnections = {} -- 接続を保存しておくためのテーブル
+-- スロットの挙動を初期化する関数
+local function setupUpgradeButton(slot)
+    -- 強化対象チェック
+    local upgradeButton = slot:FindFirstChild("UpgradeButton")
+    local targetModel = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+    if not targetModel then
+        local prompt = upgradeButton:FindFirstChildOfClass("ProximityPrompt")
+        if prompt then
+            prompt:Destroy()
+        end
+        return
+    end
+    -- コストは確定
+    local upgradeCost = MonsterManager.GetUpgradeCost(targetModel)
+    -- 既にProximityPromptがある場合は更新して、無い場合は新規作成
+    local prompt = upgradeButton:FindFirstChildOfClass("ProximityPrompt")
+    if not prompt then
+        prompt = Instance.new("ProximityPrompt")
+    end
+
+    prompt.Parent = upgradeButton
+    prompt.ObjectText = "強化ボタン"
+    prompt.ActionText = string.format("強化する(%d)", upgradeCost)
+-- 1. 以前の接続があれば解除する
+    if upgradeConnections[slot.Name] then
+        upgradeConnections[slot.Name]:Disconnect()
+        upgradeConnections[slot.Name] = nil
+    end
+    upgradeConnections[slot.Name] = prompt.Triggered:Connect(function(player)
+        -- ここに「持っているものを置く」共通ロジック
+        -- クライアントに通知
+        print("UpgradeButton:Parent Test:", upgradeButton.Parent)
+        local monster = upgradeCharacter(player, upgradeButton, upgradeCost)
+        print(string.format("Upgrade: %s", monster.Name))
+        MonsterManager.UpdateMonsterUI(monster)
+        -- コスト更新
+        setupUpgradeButton(slot)  
+    end)
+end
+
 -- プレイヤー入室時にPlayerBaseを初期化
 function PlayerBaseController.SetupPlayerBase(player: Player)
     local playerBaseTemplate = ReplicatedStorage:FindFirstChild("PlayerBase")
@@ -145,7 +212,7 @@ function PlayerBaseController.SetupPlayerBase(player: Player)
     task.spawn(function()
         while true do
             task.wait(1)
-            local income = MonsterManager.GetSlotIncomePerSecond(player)
+            local income = PlayerBaseController.GetSlotIncomePerSecond(player)
             if income > 0 then
                 -- ここで属性を更新するだけで、上のConnectした関数が自動で動く！
                 if moneyBox then
@@ -165,7 +232,34 @@ end
 function PlayerBaseController.FindPlayerSlots(player)
     local playerBase = PlayerBaseController.FindPlayerBase(player)
     local monsterSlotsFolder = playerBase:FindFirstChild("MonsterSlots")
+   
     return monsterSlotsFolder:GetChildren()
+end
+
+function PlayerBaseController.FindPlayerSlotsMonsters(player)
+    -- プレイヤーの全スロットを取得
+    local slots = PlayerBaseController.FindPlayerSlots(player)
+    local monsterList = {}
+
+    if slots then
+        for _, slot in ipairs(slots) do
+            local monster = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+            if monster then
+                table.insert(monsterList, monster)
+            end
+        end
+    end
+    return monsterList
+end
+
+-- プレイヤーのスロット配置モンスターの合算収入を取得
+function PlayerBaseController.GetSlotIncomePerSecond(player: Player): number
+    local totalIncome = 0
+    local monsters = PlayerBaseController.FindPlayerSlotsMonsters(player)
+    for _, monster in ipairs(monsters) do
+        totalIncome += MonsterManager.CalcIncomePerSecond(monster)
+    end
+    return totalIncome
 end
 
 function PlayerBaseController.CreatePlayerBaseName(player)
@@ -185,6 +279,9 @@ end
 function PlayerBaseController.SaveSlots(player: Player)
 
     local slots = PlayerBaseController.FindPlayerSlots(player)
+    for _, slot in ipairs(slots) do
+        setupUpgradeButton(slot)
+    end
     DataManager.SaveSlotData(player, slots)
 end
 
@@ -231,14 +328,18 @@ function PlayerBaseController.RestoreSlots(player: Player)
                     charModel.Parent = slot
 
                     -- 属性設定（保存済みデータから復元）
-                    MonsterManager.SetInitStatus(charModel, monsterId, modelName)
+                    MonsterManager.MappingStatus(monsterInfo, charModel)
                     charModel:SetAttribute("Owner", player.UserId)
+
+                    -- UI更新
+                    MonsterManager.UpdateMonsterUI(charModel)
 
                     -- スロット属性更新
                     slot:SetAttribute("MonsterId", monsterId)
                     slot:SetAttribute("Occupied", true)
-
                     -- ProximityPromptのテキスト更新
+                    -- 強化ボタンのイベント設定
+                    setupUpgradeButton(slot)
                     local prompt = slot:FindFirstChildOfClass("ProximityPrompt")
                     if prompt then
                         prompt.ActionText = "ひろう"
