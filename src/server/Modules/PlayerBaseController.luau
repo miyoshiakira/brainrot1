@@ -4,7 +4,9 @@ local CollectionService = game:GetService("CollectionService")
 local CommonFunctions = require(script.Parent.CommonFunctions)
 local DataManager = require(script.Parent.DataManager)
 local MonsterManager = require(script.Parent.MonsterManager)
+local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
+local constants = require("../Constants")
 
 local PlayerBaseController = {}
 
@@ -109,7 +111,7 @@ function PlayerBaseController.SetupPlayerBase(player: Player)
     local monsterSlotsFolder = playerBase:FindFirstChild("MonsterSlots")
     if monsterSlotsFolder then
         local slotIndex = 1
-        for _, slot in ipairs(monsterSlotsFolder:GetDescendants()) do
+        for _, slot in ipairs(monsterSlotsFolder:GetChildren()) do
             if slot:IsA("BasePart") then
                 print(string.format("スロット %d (%s) を初期化中...", slotIndex, slot.Name))
                 slot:SetAttribute("Owner", player.UserId)
@@ -138,6 +140,7 @@ function PlayerBaseController.SetupPlayerBase(player: Player)
     end
     -- パッシブコイン生成を開始
     setUpMoneyBox(player)
+
     -- 既存の加算ループ処理
     task.spawn(function()
         while true do
@@ -159,6 +162,12 @@ function PlayerBaseController.FindPlayerBase(player)
     return playerBase
 end
 
+function PlayerBaseController.FindPlayerSlots(player)
+    local playerBase = PlayerBaseController.FindPlayerBase(player)
+    local monsterSlotsFolder = playerBase:FindFirstChild("MonsterSlots")
+    return monsterSlotsFolder:GetChildren()
+end
+
 function PlayerBaseController.CreatePlayerBaseName(player)
     local targetName = "PlayerBase_" .. player.UserId
     return targetName
@@ -172,8 +181,77 @@ function PlayerBaseController.CleanupPlayerBase(player: Player)
     end
 end
 
--- TODO: 追加のユーティリティ関数をここに実装
--- 例: function PlayerBaseController.GetPlayerBase(player: Player)
--- 例: function PlayerBaseController.UpdatePlayerBase(player: Player)
+-- 現在のスロット状態をプロファイルに保存
+function PlayerBaseController.SaveSlots(player: Player)
+
+    local slots = PlayerBaseController.FindPlayerSlots(player)
+    DataManager.SaveSlotData(player, slots)
+end
+
+-- プロファイルからスロット状態を復元（モンスターをスロットに配置）
+function PlayerBaseController.RestoreSlots(player: Player)
+    local slots = PlayerBaseController.FindPlayerSlots(player)
+
+    local slotData = DataManager.LoadSlotData(player)
+    print("[RestoreSlots] slotData count:", #slotData)
+    if not slotData or #slotData == 0 then return end
+
+    local slotIndex = 1
+    for _, slot in ipairs(slots) do
+        if slot:IsA("BasePart") then
+            local monsterInfo = slotData[slotIndex]
+            if monsterInfo then
+                -- slotData[slotIndex] は Monster テーブル
+                local monsterId = monsterInfo.MonsterId
+                local modelName = monsterInfo.ModelName
+
+                if not monsterId or not modelName then
+                    warn(string.format("[RestoreSlots] スロット%d: monsterId/ModelName がnil", slotIndex))
+                    slotIndex = slotIndex + 1
+                    continue
+                end
+
+                -- テンプレートからClone
+                local templatesFolder = ReplicatedStorage:FindFirstChild("CharacterTemplates")
+                local template = templatesFolder and templatesFolder:FindFirstChild(modelName)
+                if template then
+                    local charModel = template:Clone()
+                    CommonFunctions.autoWeldModel(charModel)
+                    charModel.Name = constants.CHARACTER_MODEL_NAME
+
+                    -- レアリティに応じた色変更＋物理設定
+                    local rarity = monsterInfo.Rarity
+                    MonsterManager.SetupCharModel(charModel, rarity)
+
+                    -- スロットに配置
+                    local Y_OFFSET = 3.0
+                    local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
+                    charModel:PivotTo(targetCFrame)
+                    CommonFunctions.enableAnchor(charModel, true)
+                    charModel.Parent = slot
+
+                    -- 属性設定（保存済みデータから復元）
+                    MonsterManager.SetInitStatus(charModel, monsterId, modelName)
+                    charModel:SetAttribute("Owner", player.UserId)
+
+                    -- スロット属性更新
+                    slot:SetAttribute("MonsterId", monsterId)
+                    slot:SetAttribute("Occupied", true)
+
+                    -- ProximityPromptのテキスト更新
+                    local prompt = slot:FindFirstChildOfClass("ProximityPrompt")
+                    if prompt then
+                        prompt.ActionText = "ひろう"
+                    end
+
+                    print(string.format("[PlayerBaseController] %s のスロット%d に %s を復元", player.Name, slotIndex, monsterId))
+                else
+                    warn(string.format("[PlayerBaseController] テンプレート未発見: %s", modelName or "nil"))
+                end
+            end
+            slotIndex = slotIndex + 1
+        end
+    end
+end
 
 return PlayerBaseController

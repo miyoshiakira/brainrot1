@@ -4,13 +4,14 @@
     ブレインロット収集・育成システム対応
 ]]
 
-export type BrainrotCharacter = {
-    Id: string,
-    Name: string,
+export type Monster = {
+    MonsterId: string,
+    MonsterName: string,
+    ModelName: string,
     Rarity: string,  -- "Common", "Rare", "Epic", "Legendary", "Rainbow"
-    Bonus: number,    -- キャラクターボーナス値
-    Level: number,   -- 育成レベル
-    Count: number,    -- 所持数（重複取得用）
+    Money: number,    -- 1秒あたりの収入
+    Bonus: number,    -- ボーナス値
+    Level: number,    -- 育成レベル
 }
 
 export type ProfileData = {
@@ -19,16 +20,16 @@ export type ProfileData = {
 
     -- 高度（Brainrot Launch Simulator用）
     Height: number,
-    TotalHeight: number,  -- 累計高度
 
     -- キャラクターボーナス
     CharacterBonus: number,
     BasePower: number,
 
     -- ブレインロット収集
-    Characters: {[string]: BrainrotCharacter},  -- キャラクターID → キャラクターデータ
-    ActiveCharacter: string?,  -- 現在選択中のキャラクターID
     TotalCharactersCollected: number,  -- 総収集数
+
+    -- スロット配置
+    SlotData: {[number]: Monster?},  -- スロット番号 → MonsterId（空ならnil）
 
     -- アンロック済みオブジェクトID
     UnlockedObjects: {[string]: boolean},
@@ -51,16 +52,16 @@ local ProfileTemplate: ProfileData = {
 
     -- 高度（Brainrot Launch Simulator用）
     Height = 0,
-    TotalHeight = 0,
 
     -- キャラクターボーナス
     CharacterBonus = 10,  -- 初期キャラクターボーナス
     BasePower = 100,  -- 基本発射パワー
 
     -- ブレインロット収集
-    Characters = {},
-    ActiveCharacter = nil,
     TotalCharactersCollected = 0,
+
+    -- スロット配置
+    SlotData = {},
 
     -- アンロック済みオブジェクトID
     UnlockedObjects = {},
@@ -77,4 +78,6 @@ local ProfileTemplate: ProfileData = {
     RainbowCharactersFound = 0,
 }
 
-return ProfileTemplate
+return {
+    ProfileTemplate = ProfileTemplate,
+}

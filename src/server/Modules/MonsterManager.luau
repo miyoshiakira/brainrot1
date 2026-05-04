@@ -51,14 +51,41 @@ local function UpdateMonsterUI(monsterModel)
 end
 
 -- モンスターが追加された時の処理
-local function SetInitStatus(monsterModel, monsterId)
+local function SetInitStatus(monsterModel, monsterId, modelName)
     local monsterStatusModel = BrainrotMonsters.GetCharacterById(monsterId)
     monsterModel:SetAttribute("MonsterId", monsterId)
+    monsterModel:SetAttribute("ModelName", modelName)
     monsterModel:SetAttribute("MonsterName", monsterStatusModel.MonsterName)
-    monsterModel:SetAttribute("Level", monsterStatusModel.Level)
+    monsterModel:SetAttribute("Level", monsterStatusModel.Level or 1)
     monsterModel:SetAttribute("Money", monsterStatusModel.Money)
     monsterModel:SetAttribute("Rarity", monsterStatusModel.Rarity)
     UpdateMonsterUI(monsterModel)
+end
+
+-- キャラクターモデルの共通セットアップ（色変更＋物理設定）
+function MonsterManager.SetupCharModel(charModel: Instance, rarity: string)
+    -- レアリティに応じて色を変更
+    local rarityConfig = BrainrotMonsters.GetRarityConfig(rarity)
+    local charColor = rarityConfig and rarityConfig.Color or Color3.fromRGB(255, 255, 255)
+
+    for _, part in ipairs(charModel:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name == "Body" then
+            part.Color = charColor
+            local light = part:FindFirstChild("SlimeLight")
+            if light then
+                light.Color = charColor
+            end
+        end
+    end
+
+    -- 全パーツの物理設定
+    for _, part in ipairs(charModel:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+            part.Anchored = false
+            part.Massless = true
+        end
+    end
 end
 
 -- すでに存在しているモンスターを処理
@@ -85,6 +112,7 @@ end
 
 return {
     SetInitStatus = SetInitStatus,
+    SetupCharModel = MonsterManager.SetupCharModel,
     UpdateMonsterUI = UpdateMonsterUI,
     GetSlotIncomePerSecond = MonsterManager.GetSlotIncomePerSecond,
 }

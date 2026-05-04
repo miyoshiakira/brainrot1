@@ -121,13 +121,12 @@ local function launchPlayer(player, height, criticalType, multiplier)
             end
         end)
     end
-
+    print("LaunchResult:", criticalType)
     -- クライアントに通知
     RemoteEvents.LaunchResult:FireClient(player, {
         Height = height,
         CriticalType = criticalType,
         Multiplier = multiplier,
-        TotalHeight = LaunchManager.GetGlobalStats().TotalHeight,
         CoinsEarned = math.floor(height * LAUNCH_CONFIG.CoinsPerHeight),
         IsRainbowRain = false,
     })
@@ -158,6 +157,7 @@ local function onTouch(otherPart)
 
     -- クリティカル判定
     local criticalMultiplier, criticalType
+    criticalType = "NORMAL"
     if gaugePosition >= 0.45 and gaugePosition <= 0.55 then
         criticalMultiplier = LAUNCH_CONFIG.PerfectMultiplier
         criticalType = "PERFECT"

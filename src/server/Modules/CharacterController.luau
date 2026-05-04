@@ -7,6 +7,7 @@ local constants = require("../Constants")
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 
 local DataManager = require(script.Parent.DataManager)
+local PlayerBaseController = require(script.Parent.PlayerBaseController)
 -- LaunchManagerなどは既存のまま
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- 配置時の高さオフセット（浮いている場合はここを下げる）
@@ -24,7 +25,7 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     end
 
     local monsterId = heldModel:GetAttribute("MonsterId")
-    if not monsterId or not profile.Characters[monsterId] then
+    if not monsterId then
         print('キャラクターID不正')
         return { success = false, error = "Character data missing" }
     end
@@ -47,20 +48,16 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
-    profile.ActiveCharacter = monsterId
     
     -- スロットの状態更新
     print(string.format("[Server] Setting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", monsterId)
     slot:SetAttribute("Occupied", true)
 
-    -- ボーナス適用
-    local characterData = profile.Characters[monsterId]
-    if characterData and characterData.Bonus then
-        profile.CharacterBonus = characterData.Bonus
-    end
-
     print(string.format("[Server] %s placed %s on %s", player.Name, monsterId, slot.Name))
+
+    -- スロット状態を保存
+    PlayerBaseController.SaveSlots(player)
 
     return {
         success = true,
@@ -102,7 +99,6 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
-    profile.ActiveCharacter = nil
     
     -- スロットの状態更新
     local monsterId = slot:GetAttribute("MonsterId")
@@ -111,6 +107,9 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     slot:SetAttribute("Occupied", false)
 
     print(string.format("[Server] %s got %s on %s", player.Name, monsterId, slot.Name))
+
+    -- スロット状態を保存
+    PlayerBaseController.SaveSlots(player)
 
     return {
         success = true,

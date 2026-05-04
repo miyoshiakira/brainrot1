@@ -160,10 +160,6 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
     local charDef = BrainrotMonsters.GetCharacterById(monsterId)
     if not charDef then return nil end
 
-    -- レアリティカラーを取得
-    local rarityConfig = BrainrotMonsters.GetRarityConfig(charDef.Rarity)
-    local charColor = rarityConfig and rarityConfig.Color or Color3.fromRGB(255, 255, 255)
-
     -- スライムテンプレートを取得
     local templatesFolder = ReplicatedStorage:FindFirstChild("CharacterTemplates")
     local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild(charDef.ModelName)
@@ -177,26 +173,8 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
         CommonFunctions.autoWeldModel(charModel)
         charModel.Name = constants.CHARACTER_MODEL_NAME
 
-        -- レアリティに応じて色を変更
-        for _, part in ipairs(charModel:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name == "Body" then
-                part.Color = charColor
-                -- ライトも更新
-                local light = part:FindFirstChild("SlimeLight")
-                if light then
-                    light.Color = charColor
-                end
-            end
-        end
-
-        -- 全パーツの物理設定
-        for _, part in ipairs(charModel:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-                part.Anchored = false
-                part.Massless = true
-            end
-        end
+        -- レアリティに応じた色変更＋物理設定
+        MonsterManager.SetupCharModel(charModel, charDef.Rarity)
     else
         -- フォールバック：シンプルなブロック
         -- charModel = Instance.new("Part")
@@ -210,7 +188,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
     end
 
     -- キャラクター情報を属性として保存
-    MonsterManager.SetInitStatus(charModel, monsterId)
+    MonsterManager.SetInitStatus(charModel, monsterId, charDef.ModelName)
     charModel:SetAttribute("Owner", player.UserId)
 
     -- PrimaryPartを取得（Weld用）
@@ -271,71 +249,17 @@ function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): s
     if #characters == 0 then return nil end
 
     local selectedChar = characters[math.random(1, #characters)]
-    local bonus = BrainrotMonsters.GenerateBonus(rarity)
+    profile.TotalCharactersCollected = (profile.TotalCharactersCollected or 0) + 1
 
-    -- プロファイルに追加
-    if not profile.Characters then
-        profile.Characters = {}
+    -- Rainbow キャラクターの場合は統計更新
+    if rarity == "Rainbow" then
+        profile.RainbowCharactersFound = (profile.RainbowCharactersFound or 0) + 1
     end
-
-    local existingChar = profile.Characters[selectedChar.MonsterId]
-    if existingChar then
-        -- 既に所持している場合はカウント増加
-        existingChar.Count = existingChar.Count + 1
-        existingChar.Bonus = math.max(existingChar.Bonus, bonus)  -- より高いボーナスを保持
-    else
-        -- 新規キャラクター
-        profile.Characters[selectedChar.MonsterId] = {
-            Id = selectedChar.MonsterId,
-            Name = selectedChar.MonsterName,
-            Rarity = rarity,
-            Bonus = bonus,
-            Level = 1,
-            Count = 1,
-        }
-        profile.TotalCharactersCollected = (profile.TotalCharactersCollected or 0) + 1
-
-        -- Rainbow キャラクターの場合は統計更新
-        if rarity == "Rainbow" then
-            profile.RainbowCharactersFound = (profile.RainbowCharactersFound or 0) + 1
-        end
-    end
-
-    -- アクティブキャラクターが未設定の場合は最初のキャラを設定
-    if not profile.ActiveCharacter then
-        profile.ActiveCharacter = selectedChar.MonsterId
-    end
-
-    -- キャラクターボーナスを再計算
-    LaunchManager.RecalculateCharacterBonus(player)
 
     -- 3Dモデルを生成してプレイヤーに持たせる
     LaunchManager.SpawnCharacterModel(player, selectedChar.MonsterId)
 
     return selectedChar.MonsterId
-end
-
--- キャラクターボーナス再計算
-function LaunchManager.RecalculateCharacterBonus(player: Player)
-    local profile = DataManager.GetProfile(player)
-    if not profile or not profile.Characters then return end
-
-    local totalBonus = 10  -- 基本値
-
-    -- アクティブキャラクターのボーナス
-    if profile.ActiveCharacter and profile.Characters[profile.ActiveCharacter] then
-        local activeChar = profile.Characters[profile.ActiveCharacter]
-        totalBonus = totalBonus + activeChar.Bonus * activeChar.Level
-    end
-
-    -- 全キャラクターのパッシブボーナス（収集数に応じて）
-    local collectionBonus = 0
-    for _, char in pairs(profile.Characters) do
-        collectionBonus = collectionBonus + char.Bonus * 0.1  -- 他キャラの10%を追加
-    end
-    totalBonus = totalBonus + collectionBonus
-
-    profile.CharacterBonus = math.floor(totalBonus)
 end
 
 -- 発射処理
@@ -364,7 +288,6 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): boo
 
     -- プロファイルを更新
     profile.Height = profile.Height + height
-    profile.TotalHeight = profile.TotalHeight + height
     profile.TotalLaunches = profile.TotalLaunches + 1
 
     -- コインを獲得
@@ -382,21 +305,16 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): boo
 
     -- クライアントに結果を送信
     RemoteEvents.LaunchResult:FireClient(player, {
-        Height = height,
-        CriticalType = criticalType,
-        Multiplier = multiplier,
-        TotalHeight = profile.Height,
+        Height = profile.Height,
         CoinsEarned = coinsEarned,
         IsRainbowRain = GlobalState.IsRainbowRain,
         DroppedCharacter = droppedMonsterId,
+        CriticalType = criticalType,
     })
 
     -- キャラクター獲得通知
     if droppedMonsterId then
-        local charData = profile.Characters[droppedMonsterId]
-        if charData then
-            RemoteEvents.CharacterCollected:FireClient(player, charData)
-        end
+        RemoteEvents.CharacterCollected:FireClient(player, droppedMonsterId)
     end
 
     -- グローバル高度を全員に通知
@@ -488,43 +406,8 @@ function LaunchManager.SelectCharacter(player: Player, monsterId: string): boole
     local profile = DataManager.GetProfile(player)
     if not profile then return false end
 
-    if not profile.Characters or not profile.Characters[monsterId] then
-        return false
-    end
-
-    profile.ActiveCharacter = monsterId
-    LaunchManager.RecalculateCharacterBonus(player)
-
     -- クライアントに通知
     RemoteEvents.CharacterSelected:FireClient(player, monsterId, profile.CharacterBonus)
-
-    return true
-end
-
--- キャラクター育成（レベルアップ）
-function LaunchManager.UpgradeCharacter(player: Player, monsterId: string): boolean
-    local profile = DataManager.GetProfile(player)
-    if not profile then return false end
-
-    local char = profile.Characters and profile.Characters[monsterId]
-    if not char then return false end
-
-    -- レベルアップコスト計算
-    local upgradeCost = char.Level * 100
-
-    if profile.Money < upgradeCost then
-        return false
-    end
-
-    -- コイン消費
-    DataManager.SpendMoney(player, upgradeCost)
-
-    -- レベルアップ
-    char.Level = char.Level + 1
-    LaunchManager.RecalculateCharacterBonus(player)
-
-    -- クライアントに通知
-    RemoteEvents.CharacterUpgraded:FireClient(player, monsterId, char.Level, profile.CharacterBonus)
 
     return true
 end
@@ -535,8 +418,6 @@ function LaunchManager.GetCharacterCollection(player: Player)
     if not profile then return nil end
 
     return {
-        Characters = profile.Characters or {},
-        ActiveCharacter = profile.ActiveCharacter,
         TotalCollected = profile.TotalCharactersCollected or 0,
         RainbowFound = profile.RainbowCharactersFound or 0,
     }

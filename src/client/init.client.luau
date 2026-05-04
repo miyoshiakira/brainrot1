@@ -12,12 +12,14 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local _UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- RemoteEvents待機
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
+local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 print("=================================")
@@ -439,6 +441,7 @@ end
 
 -- 発射結果を表示
 local function showLaunchResult(result)
+    if not result then return end
     local ui = playerGui:FindFirstChild("BrainrotUI")
     if not ui then return end
 
@@ -456,17 +459,13 @@ local function showLaunchResult(result)
     end
 
     resultLabel.TextColor3 = criticalColor
-    resultLabel.Text = string.format("%s! +%sm (+%d🪙)",
-        result.CriticalType,
-        formatNumber(result.Height),
-        result.CoinsEarned
-    )
 
     -- 高度を更新
-    updateHeightDisplay(result.TotalHeight)
+    updateHeightDisplay(result.Height)
 
     -- フェードアウト
     task.delay(2, function()
+        print("result:", result)
         if resultLabel.Text:find(result.CriticalType) then
             resultLabel.Text = ""
         end
@@ -811,7 +810,7 @@ end
 local function showCharacterCollected(charData)
     local rarityColor = RARITY_COLORS[charData.Rarity] or COLORS.White
     local title = string.format("🎉 NEW %s!", string.upper(charData.Rarity))
-    local message = string.format("%s を入手! (+%d ボーナス)", charData.Name, charData.Bonus)
+    local message = string.format("%s を入手!", charData.MonsterName)
     showNotification(title, message, rarityColor)
 end
 
@@ -970,8 +969,8 @@ RemoteEvents.NotifyPlayer.OnClientEvent:Connect(function(title, message)
 end)
 
 -- キャラクター関連イベント
-RemoteEvents.CharacterCollected.OnClientEvent:Connect(function(charData)
-    characterCollection[charData.Id] = charData
+RemoteEvents.CharacterCollected.OnClientEvent:Connect(function(droppedMonsterId)
+    local charData = BrainrotMonsters.GetCharacterById(droppedMonsterId)
     showCharacterCollected(charData)
 end)
 
@@ -1073,13 +1072,6 @@ task.spawn(function()
                 Multiplier = 3.0
             })
         end
-    end
-
-    -- キャラクターコレクション取得
-    local collection = RemoteEvents.GetCharacterCollection:InvokeServer()
-    if collection then
-        characterCollection = collection.Characters or {}
-        activeMonsterId = collection.ActiveCharacter
     end
 end)
 

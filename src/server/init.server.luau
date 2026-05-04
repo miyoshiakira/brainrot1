@@ -33,11 +33,8 @@ RemoteEvents.GetPlayerData.OnServerInvoke = function(player)
         return {
             Money = profile.Money,
             Height = profile.Height,
-            TotalHeight = profile.TotalHeight,
             CharacterBonus = profile.CharacterBonus,
             BasePower = profile.BasePower,
-            Characters = profile.Characters or {},
-            ActiveCharacter = profile.ActiveCharacter,
             TotalCharactersCollected = profile.TotalCharactersCollected or 0,
             RainbowCharactersFound = profile.RainbowCharactersFound or 0,
         }
@@ -62,13 +59,14 @@ Players.PlayerAdded:Connect(function(player)
     -- Leaderstatsを作成
     LaunchManager.CreateLeaderstats(player)
 
-    -- データ読み込み待機
-    task.wait(1)
-
-    local profile = DataManager.GetProfile(player)
+    -- データ読み込み完了を待機
+    local profile = DataManager.WaitForProfile(player)
     if profile then
         -- Leaderstatsを更新
         LaunchManager.UpdateLeaderstats(player)
+
+        -- 保存済みのスロット配置を復元（プロファイル読み込み後であること）
+        PlayerBaseController.RestoreSlots(player)
 
         -- 初期お金を通知
         RemoteEvents.MoneyChanged:FireClient(player, profile.Money)
