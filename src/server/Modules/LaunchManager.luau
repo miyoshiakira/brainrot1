@@ -17,6 +17,7 @@ local MonsterManager = require(script.Parent.MonsterManager)
 -- RemoteEvents待機
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters).BrainrotMonsters
 
 local LaunchManager = {}
@@ -168,10 +169,9 @@ function LaunchManager.CalculateLaunchHeight(player: Player, gaugePosition: numb
         criticalMultiplier = criticalMultiplier * LAUNCH_CONFIG.RainbowRainMultiplier
     end
 
-    -- Height = (BasePower + CharacterBonus) × CriticalMultiplier × LegPowerBonus
+    -- Height = CriticalMultiplier × LegPowerBonus
     local legPowerBonus = 1 + (profile.LegPower * LAUNCH_CONFIG.LegPowerHeightBonus)
-    local baseHeight = profile.BasePower + profile.CharacterBonus
-    local height = baseHeight * criticalMultiplier * legPowerBonus
+    local height = criticalMultiplier * legPowerBonus * 10
 
     -- 特大ジャンプ判定: 脚力が閾値以上 + PERFECT
     local isMegaJump = profile.LegPower >= LAUNCH_CONFIG.MegaJumpLegPowerThreshold and criticalType == "PERFECT"
@@ -432,23 +432,6 @@ function LaunchManager.EndRainbowRain()
     print("[LaunchManager] Rainbow Rain終了")
 end
 
--- パッシブコイン生成
-function LaunchManager.StartPassiveCoins(player: Player)
-    task.spawn(function()
-        while player.Parent do
-            task.wait(LAUNCH_CONFIG.PassiveCoinsInterval)
-
-            local profile = DataManager.GetProfile(player)
-            if profile then
-                -- 基本コイン + キャラクターボーナスに応じた追加
-                local passiveCoins = LAUNCH_CONFIG.PassiveCoinsBase + math.floor(profile.CharacterBonus / 10)
-                DataManager.AddMoney(player, passiveCoins)
-                LaunchManager.UpdateLeaderstats(player)
-            end
-        end
-    end)
-end
-
 -- グローバル統計取得
 function LaunchManager.GetGlobalStats()
     return {
@@ -458,17 +441,6 @@ function LaunchManager.GetGlobalStats()
         RainbowRainTimeLeft = GlobalState.IsRainbowRain and
             math.max(0, GlobalState.RainbowRainEndTime - tick()) or 0,
     }
-end
-
--- キャラクター選択
-function LaunchManager.SelectCharacter(player: Player, monsterId: string): boolean
-    local profile = DataManager.GetProfile(player)
-    if not profile then return false end
-
-    -- クライアントに通知
-    RemoteEvents.CharacterSelected:FireClient(player, monsterId, profile.CharacterBonus)
-
-    return true
 end
 
 -- キャラクターコレクション取得
@@ -489,7 +461,7 @@ end
 -- 初期化
 function LaunchManager.Initialize()
     -- 発射リクエスト受信
-    RemoteEvents.LaunchRequest.OnServerInvoke = function(player, gaugePosition)
+    RemoteFunctions.LaunchRequest.OnServerInvoke = function(player, gaugePosition)
         local data = LaunchManager.ProcessLaunch(player, gaugePosition)
         if data.success then
             return data.height
@@ -506,11 +478,6 @@ function LaunchManager.Initialize()
     RemoteEvents.GetCharacterCollection.OnServerInvoke = function(player)
         return LaunchManager.GetCharacterCollection(player)
     end
-
-    -- キャラクター選択
-    RemoteEvents.CharacterSelected.OnServerEvent:Connect(function(player, monsterId)
-        LaunchManager.SelectCharacter(player, monsterId)
-    end)
     
     -- キャラクターを手元に拾う
     RemoteEvents.CharacterPickedUp.OnServerEvent:Connect(function(player, monsterId)

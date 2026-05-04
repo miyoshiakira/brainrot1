@@ -683,7 +683,7 @@ performLaunch = function()
         -- 発射！
         gaugeState.isActive = false
         -- 物理的にプレイヤーを吹き飛ばす
-        local height = RemoteEvents.LaunchRequest:InvokeServer(gaugeState.position)
+        local height = RemoteFunctions.LaunchRequest:InvokeServer(gaugeState.position)
         if character then
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
             if humanoidRootPart and humanoid then
@@ -1151,11 +1151,6 @@ RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
 
     return true
 end
-
-RemoteEvents.CharacterSelected.OnClientEvent:Connect(function(charId, newBonus)
-    activeMonsterId = charId
-    updateCharacterList()
-end)
 
 -- 初期データ取得
 task.spawn(function()

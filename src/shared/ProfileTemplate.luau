@@ -20,10 +20,7 @@ export type ProfileData = {
 
     -- 高度（Brainrot Launch Simulator用）
     Height: number,
-
-    -- キャラクターボーナス
-    CharacterBonus: number,
-    BasePower: number,
+    LegPower: number,
 
     -- ブレインロット収集
     TotalCharactersCollected: number,  -- 総収集数
@@ -52,10 +49,7 @@ local ProfileTemplate: ProfileData = {
 
     -- 高度（Brainrot Launch Simulator用）
     Height = 0,
-
-    -- キャラクターボーナス
-    CharacterBonus = 10,  -- 初期キャラクターボーナス
-    BasePower = 100,  -- 基本発射パワー
+    LegPower = 1,
 
     -- ブレインロット収集
     TotalCharactersCollected = 0,

@@ -36,4 +36,5 @@ RemoteFunctions.SlotActionTrigger = getOrCreateRemoteFunction("SlotActionTrigger
 RemoteFunctions.JumpPadAction = getOrCreateRemoteFunction("JumpPadAction")  -- 発射台アクション
 RemoteFunctions.UpgradeButtonActionTrigger = getOrCreateRemoteFunction("UpgradeButtonActionTrigger")  -- 強化ボタンアクション
 RemoteFunctions.TrashBoxAction = getOrCreateRemoteFunction("TrashBoxAction")
+RemoteFunctions.LaunchRequest = getOrCreateRemoteFunction("LaunchRequest")  -- クライアント→サーバー: ゲージ位置を送信、heightを返す
 return RemoteFunctions

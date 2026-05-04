@@ -119,7 +119,10 @@ function MonsterManager.CalcIncomePerSecond(charModel: Instance): number
     local rarity = charModel:GetAttribute("Rarity") or "Common"
     local rarityMul = RARITY_MULTIPLIER[rarity] or 1.0
 
-    return baseMoney * level * rarityMul
+    -- 式: 基本収益 * (レベルの2.1乗) * レアリティ倍率
+    local yield = baseMoney * math.pow(level, 2.1) * rarityMul
+    
+    return math.floor(yield)
 end
 
 -- キャラクターモデルの強化コスト
@@ -131,7 +134,9 @@ function MonsterManager.GetUpgradeCost(charModel: Instance): number
     local rarity = charModel:GetAttribute("Rarity") or "Common"
     local rarityMul = RARITY_MULTIPLIER[rarity] or 1.0
 
-    return baseMoney * level * rarityMul * 10
+    -- 式: (基本) + (レベルによる加算) + (レベルの2乗による急上昇)
+    local cost = baseMoney + (level * 200) + (math.pow(level, 2.5) * 50)
+    return math.floor(cost * rarityMul)
 end
 
 -- 新しく生成されたモンスターを監視

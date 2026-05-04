@@ -61,7 +61,6 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     return {
         success = true,
         activeCharacter = monsterId,
-        characterBonus = profile.CharacterBonus
     }
 end
 

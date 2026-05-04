@@ -34,8 +34,6 @@ RemoteEvents.GetPlayerData.OnServerInvoke = function(player)
             Money = profile.Money,
             LegPower = profile.LegPower,
             Height = profile.Height,
-            CharacterBonus = profile.CharacterBonus,
-            BasePower = profile.BasePower,
             TotalCharactersCollected = profile.TotalCharactersCollected or 0,
             RainbowCharactersFound = profile.RainbowCharactersFound or 0,
         }
