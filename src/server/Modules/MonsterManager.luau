@@ -75,7 +75,9 @@ function MonsterManager.GetSlotIncomePerSecond(player: Player): number
     for _, slot in ipairs(CollectionService:GetTagged(SLOT_TAG)) do
         if slot:GetAttribute("Owner") == player.UserId then
             local monster = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
-            totalMoney = totalMoney + (monster:GetAttribute("Money") or 0)
+            if monster then
+                totalMoney = totalMoney + (monster:GetAttribute("Money") or 0)
+            end
         end
     end
     return totalMoney

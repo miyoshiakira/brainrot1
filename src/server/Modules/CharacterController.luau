@@ -28,6 +28,7 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
         print('キャラクターID不正')
         return { success = false, error = "Character data missing" }
     end
+    print(string.format("[Server] Try Place %s", monsterId))
     -------------------------------------------------------
     -- 物理的な配置処理
     -------------------------------------------------------
@@ -52,7 +53,6 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     print(string.format("[Server] Setting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", monsterId)
     slot:SetAttribute("Occupied", true)
-    slot:SetAttribute("Owner", player.UserId)
 
     -- ボーナス適用
     local characterData = profile.Characters[monsterId]
@@ -109,7 +109,6 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     print(string.format("[Server] Getting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", nil)
     slot:SetAttribute("Occupied", false)
-    slot:SetAttribute("Owner", nil)
 
     print(string.format("[Server] %s got %s on %s", player.Name, monsterId, slot.Name))
 

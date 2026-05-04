@@ -211,7 +211,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
 
     -- キャラクター情報を属性として保存
     MonsterManager.SetInitStatus(charModel, monsterId)
-    charModel:SetAttribute("OwnerId", player.UserId)
+    charModel:SetAttribute("Owner", player.UserId)
 
     -- PrimaryPartを取得（Weld用）
     local primaryPart = charModel.PrimaryPart or charModel:FindFirstChild("Body") or (charModel:IsA("BasePart") and charModel)
