@@ -18,7 +18,6 @@ DataManager.__index = DataManager
 -- 設定
 local DATA_STORE_NAME = "HybridTycoon_PlayerData_v1"
 local DEV_DATA_STORE_NAME = "HybridTycoon_PlayerData_DEV"  -- Studio用（本番データと分離）
-local AUTO_SAVE_INTERVAL = 60  -- 60秒ごとに自動保存
 local _SESSION_LOCK_TIMEOUT = 1800  -- 30分でセッションロック解除
 
 -- Studio環境かどうかを判定
@@ -207,9 +206,7 @@ function DataManager.SaveSlotData(player: Player, slots): boolean
     end
 
     profile.SlotData = slotData
-    print("Save Try Slots:", slotData)
-    DataManager.SaveProfile(player)
-    print(string.format("[DataManager] スロットデータ保存完了: %s (%dスロット)", player.Name, #slotData))
+    print(string.format("[DataManager] スロットデータ同期完了: %s (%dスロット)", player.Name, #slotData))
     return true
 end
 
@@ -310,18 +307,6 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
     DataManager.ReleaseProfile(player)
-end)
-
--- 自動保存ループ
-task.spawn(function()
-    while true do
-        task.wait(AUTO_SAVE_INTERVAL)
-        for player, profile in pairs(PlayerProfiles) do
-            if player.Parent then  -- まだゲーム内にいる
-                DataManager.SaveProfile(player)
-            end
-        end
-    end
 end)
 
 -- ゲーム終了時の緊急保存

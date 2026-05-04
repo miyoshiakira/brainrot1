@@ -35,4 +35,5 @@ RemoteFunctions.CharacterPickupTry = getOrCreateRemoteFunction("CharacterPickupT
 RemoteFunctions.SlotActionTrigger = getOrCreateRemoteFunction("SlotActionTrigger")  -- キャラクターをスロットに配置のイベント
 RemoteFunctions.JumpPadAction = getOrCreateRemoteFunction("JumpPadAction")  -- 発射台アクション
 RemoteFunctions.UpgradeButtonActionTrigger = getOrCreateRemoteFunction("UpgradeButtonActionTrigger")  -- 強化ボタンアクション
+RemoteFunctions.TrashBoxAction = getOrCreateRemoteFunction("TrashBoxAction")
 return RemoteFunctions

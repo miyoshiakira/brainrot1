@@ -7,7 +7,6 @@ local constants = require("../Constants")
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 
 local DataManager = require(script.Parent.DataManager)
-local PlayerBaseController = require(script.Parent.PlayerBaseController)
 -- LaunchManagerなどは既存のまま
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- 配置時の高さオフセット（浮いている場合はここを下げる）
@@ -55,9 +54,6 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     slot:SetAttribute("Occupied", true)
 
     print(string.format("[Server] %s placed %s on %s", player.Name, monsterId, slot.Name))
-
-    -- スロット状態を保存
-    PlayerBaseController.SaveSlots(player)
 
     return {
         success = true,
@@ -107,9 +103,6 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     slot:SetAttribute("Occupied", false)
 
     print(string.format("[Server] %s got %s on %s", player.Name, monsterId, slot.Name))
-
-    -- スロット状態を保存
-    PlayerBaseController.SaveSlots(player)
 
     return {
         success = true,

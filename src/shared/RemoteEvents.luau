@@ -59,7 +59,6 @@ RemoteEvents.GlobalHeightUpdate = getOrCreateRemoteEvent("GlobalHeightUpdate")  
 RemoteEvents.CharacterCollected = getOrCreateRemoteEvent("CharacterCollected")  -- キャラクター獲得通知
 RemoteEvents.CharacterSelected = getOrCreateRemoteEvent("CharacterSelected")    -- キャラクター選択
 RemoteEvents.CharacterPickedUp = getOrCreateRemoteEvent("CharacterPickedUp")    -- キャラクターを拾う
-RemoteEvents.CharacterUpgraded = getOrCreateRemoteEvent("CharacterUpgraded")  -- キャラクター育成
 RemoteEvents.CharacterSpawned = getOrCreateRemoteEvent("CharacterSpawned")  -- キャラクター3Dモデル生成
 RemoteEvents.CharacterRemoved = getOrCreateRemoteEvent("CharacterRemoved")  -- キャラクター取り外し
 

@@ -67,6 +67,26 @@ local function setUpMoneyBoxAction(moneyBox)
     end)
 end
 
+-- TrashBoxの挙動を初期化する関数
+local function setUpTrashBoxAction(trashBox)
+    -- 既にProximityPromptがある場合は重複作成を防止
+    local body = trashBox:FindFirstChild("Body")
+    if not body then return end
+    if body:FindFirstChildOfClass("ProximityPrompt") then return end
+    local prompt = Instance.new("ProximityPrompt")
+    prompt.Parent = body
+    prompt.ObjectText = "モンスターゴミ箱"
+    prompt.ActionText = "捨てる"
+    prompt.Triggered:Connect(function(player)
+        local target = player.Character:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+        if target then
+            target:Destroy()
+            -- Client側にも通知する
+            RemoteFunctions.TrashBoxAction:InvokeClient(player)
+        end
+    end)
+end
+
 function setUpMoneyBox(player)
     local moneyBox = PlayerBaseController.FindPlayerBase(player):FindFirstChild("MoneyBox")
     if moneyBox then
@@ -110,10 +130,6 @@ local function upgradeCharacter(player, UpgradeButton, upgradeCost)
     character:SetAttribute("Level", currentLevel + 1)
 
     print(string.format("[Upgrade] %s: Lv.%d → Lv.%d (cost: %d)", character.Name, currentLevel, currentLevel + 1, upgradeCost))
-
-    -- スロットデータを保存
-    local slots = PlayerBaseController.FindPlayerSlots(player)
-    DataManager.SaveSlotData(player, slots)
 
     return character
 end
@@ -205,6 +221,13 @@ function PlayerBaseController.SetupPlayerBase(player: Player)
             moneyBox:SetAttribute("Owner", player.UserId)
             setUpMoneyBoxAction(moneyBox)
     end
+
+    -- TrashBox初期化
+    local trashBox = playerBase:FindFirstChild("TrashBox")
+    if trashBox then
+            trashBox:SetAttribute("Owner", player.UserId)
+            setUpTrashBoxAction(trashBox)
+    end
     -- パッシブコイン生成を開始
     setUpMoneyBox(player)
 
@@ -231,6 +254,9 @@ end
 
 function PlayerBaseController.FindPlayerSlots(player)
     local playerBase = PlayerBaseController.FindPlayerBase(player)
+    if not playerBase then
+        return nil
+    end
     local monsterSlotsFolder = playerBase:FindFirstChild("MonsterSlots")
    
     return monsterSlotsFolder:GetChildren()

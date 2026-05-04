@@ -453,10 +453,6 @@ function LaunchManager.Initialize()
     RemoteEvents.CharacterPickedUp.OnServerEvent:Connect(function(player, monsterId)
         LaunchManager.CharacterPickedUp(player, monsterId)
     end)
-    -- キャラクター育成
-    RemoteEvents.CharacterUpgraded.OnServerEvent:Connect(function(player, monsterId)
-        LaunchManager.UpgradeCharacter(player, monsterId)
-    end)
 
     -- キャラクター取り外し
     RemoteEvents.CharacterRemoved.OnServerEvent:Connect(function(player, monsterId, slotName)

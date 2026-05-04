@@ -1011,6 +1011,16 @@ RemoteFunctions.SlotActionTrigger.OnClientInvoke = function(data)
     
 end
 
+-- ゴミ箱アクション
+RemoteFunctions.TrashBoxAction.OnClientInvoke = function(player)
+    -- TODO: キャラクターをゴミ箱に破棄する処理を追加
+    print("[TrashBoxAction] ゴミ箱アクションが呼び出されました")
+    CarrySystem.isCarrying = false
+    CarrySystem.heldModel = nil
+    CarrySystem.weld = nil
+    return true
+end
+
 -- 発射台アクション
 RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
     local ui = playerGui:FindFirstChild("BrainrotUI")
@@ -1042,13 +1052,6 @@ end
 
 RemoteEvents.CharacterSelected.OnClientEvent:Connect(function(charId, newBonus)
     activeMonsterId = charId
-    updateCharacterList()
-end)
-
-RemoteEvents.CharacterUpgraded.OnClientEvent:Connect(function(charId, newLevel, newBonus)
-    if characterCollection[charId] then
-        characterCollection[charId].Level = newLevel
-    end
     updateCharacterList()
 end)
 

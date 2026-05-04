@@ -49,6 +49,14 @@ local moneyBox = CommonFunctions.findModelById(game.workspace, "MoneyBox")
 local CollectionService = game:GetService("CollectionService")
 
 
+-- プレイヤー退室処理（スロット同期後にDataManagerが保存）
+Players.PlayerRemoving:Connect(function(player)
+    local slots = PlayerBaseController.FindPlayerSlots(player)
+    if slots then
+        DataManager.SaveSlotData(player, slots)
+    end
+end)
+
 -- プレイヤー入室処理
 Players.PlayerAdded:Connect(function(player)
     print("[Server] プレイヤー入室:", player.Name)
@@ -108,5 +116,23 @@ end
 
 -- LaunchManagerを初期化
 LaunchManager.Initialize()
+
+-- 自動保存（3分ごとにスロット同期＋プロファイル保存）
+task.spawn(function()
+    while true do
+        task.wait(180)
+        for _, player in ipairs(Players:GetPlayers()) do
+            local profile = DataManager.GetProfile(player)
+            if profile then
+                -- 保存前にスロットデータをプロファイルに同期
+                local slots = PlayerBaseController.FindPlayerSlots(player)
+                if slots then
+                    DataManager.SaveSlotData(player, slots)
+                end
+                DataManager.SaveProfile(player)
+            end
+        end
+    end
+end)
 
 print("[Server] 初期化完了")
