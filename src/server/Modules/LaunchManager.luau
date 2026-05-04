@@ -233,6 +233,7 @@ function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
     weld.Part0 = humanoidRootPart
     weld.Part1 = primaryPart
     weld.Parent = humanoidRootPart
+    print("LaunchManager.TryCharacterDrop:",weld)
 
     -- プレイヤーの前に配置
     charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))

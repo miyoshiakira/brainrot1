@@ -7,8 +7,6 @@ local MonsterManager = require(script.Parent.MonsterManager)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 local constants = require("../Constants")
 
-local PlayerBaseController = {}
-
 -- スロットの挙動を初期化する関数
 local function setupSlot(slot)
     -- 既にProximityPromptがある場合は重複作成を防止
@@ -80,6 +78,8 @@ local function setUpTrashBoxAction(trashBox)
     prompt.Triggered:Connect(function(player)
         local target = player.Character:FindFirstChild(constants.CHARACTER_MODEL_NAME)
         if target then
+            -- プレイヤーのHumanoidRootPartからWeldを解除
+            CommonFunctions.dettachCharacter(player)
             target:Destroy()
             -- Client側にも通知する
             RemoteFunctions.TrashBoxAction:InvokeClient(player)
@@ -87,8 +87,13 @@ local function setUpTrashBoxAction(trashBox)
     end)
 end
 
-function setUpMoneyBox(player)
-    local moneyBox = PlayerBaseController.FindPlayerBase(player):FindFirstChild("MoneyBox")
+local function FindPlayerBase(player)
+    local playerBase = CommonFunctions.findModelById(game.workspace, CreatePlayerBaseName(player))
+    return playerBase
+end
+
+local function setUpMoneyBox(player)
+    local moneyBox = FindPlayerBase(player):FindFirstChild("MoneyBox")
     if moneyBox then
         -- UI要素の取得
         local floatingPanel = moneyBox:FindFirstChild("FloatingTextPanel")
@@ -176,7 +181,7 @@ local function setupUpgradeButton(slot)
 end
 
 -- プレイヤー入室時にPlayerBaseを初期化
-function PlayerBaseController.SetupPlayerBase(player: Player)
+local function SetupPlayerBase(player: Player)
     local playerBaseTemplate = ReplicatedStorage:FindFirstChild("PlayerBase")
     if not playerBaseTemplate then
         warn("[PlayerBaseController] PlayerBaseテンプレートがReplicatedStorageに見つかりません")
@@ -235,7 +240,7 @@ function PlayerBaseController.SetupPlayerBase(player: Player)
     task.spawn(function()
         while true do
             task.wait(1)
-            local income = PlayerBaseController.GetSlotIncomePerSecond(player)
+            local income = GetSlotIncomePerSecond(player)
             if income > 0 then
                 -- ここで属性を更新するだけで、上のConnectした関数が自動で動く！
                 if moneyBox then
@@ -247,13 +252,8 @@ function PlayerBaseController.SetupPlayerBase(player: Player)
     end)
 end
 
-function PlayerBaseController.FindPlayerBase(player)
-    local playerBase = CommonFunctions.findModelById(game.workspace, PlayerBaseController.CreatePlayerBaseName(player))
-    return playerBase
-end
-
-function PlayerBaseController.FindPlayerSlots(player)
-    local playerBase = PlayerBaseController.FindPlayerBase(player)
+local function FindPlayerSlots(player)
+    local playerBase = FindPlayerBase(player)
     if not playerBase then
         return nil
     end
@@ -262,9 +262,9 @@ function PlayerBaseController.FindPlayerSlots(player)
     return monsterSlotsFolder:GetChildren()
 end
 
-function PlayerBaseController.FindPlayerSlotsMonsters(player)
+local function FindPlayerSlotsMonsters(player)
     -- プレイヤーの全スロットを取得
-    local slots = PlayerBaseController.FindPlayerSlots(player)
+    local slots = FindPlayerSlots(player)
     local monsterList = {}
 
     if slots then
@@ -279,22 +279,22 @@ function PlayerBaseController.FindPlayerSlotsMonsters(player)
 end
 
 -- プレイヤーのスロット配置モンスターの合算収入を取得
-function PlayerBaseController.GetSlotIncomePerSecond(player: Player): number
+function GetSlotIncomePerSecond(player: Player): number
     local totalIncome = 0
-    local monsters = PlayerBaseController.FindPlayerSlotsMonsters(player)
+    local monsters = FindPlayerSlotsMonsters(player)
     for _, monster in ipairs(monsters) do
         totalIncome += MonsterManager.CalcIncomePerSecond(monster)
     end
     return totalIncome
 end
 
-function PlayerBaseController.CreatePlayerBaseName(player)
+function CreatePlayerBaseName(player)
     local targetName = "PlayerBase_" .. player.UserId
     return targetName
 end
 
 -- プレイヤー退室時にPlayerBaseを削除
-function PlayerBaseController.CleanupPlayerBase(player: Player)
+function CleanupPlayerBase(player: Player)
     local playerBase = game.Workspace:FindFirstChild("PlayerBase_" .. player.UserId)
     if playerBase then
         playerBase:Destroy()
@@ -302,9 +302,9 @@ function PlayerBaseController.CleanupPlayerBase(player: Player)
 end
 
 -- 現在のスロット状態をプロファイルに保存
-function PlayerBaseController.SaveSlots(player: Player)
+function SaveSlots(player: Player)
 
-    local slots = PlayerBaseController.FindPlayerSlots(player)
+    local slots = FindPlayerSlots(player)
     for _, slot in ipairs(slots) do
         setupUpgradeButton(slot)
     end
@@ -312,8 +312,8 @@ function PlayerBaseController.SaveSlots(player: Player)
 end
 
 -- プロファイルからスロット状態を復元（モンスターをスロットに配置）
-function PlayerBaseController.RestoreSlots(player: Player)
-    local slots = PlayerBaseController.FindPlayerSlots(player)
+function RestoreSlots(player: Player)
+    local slots = FindPlayerSlots(player)
 
     local slotData = DataManager.LoadSlotData(player)
     print("[RestoreSlots] slotData count:", #slotData)
@@ -381,4 +381,15 @@ function PlayerBaseController.RestoreSlots(player: Player)
     end
 end
 
-return PlayerBaseController
+return {
+    setupUpgradeButton = setupUpgradeButton,
+    FindPlayerBase = FindPlayerBase,
+    FindPlayerSlots = FindPlayerSlots,
+    FindPlayerSlotsMonsters = FindPlayerSlotsMonsters,
+    GetSlotIncomePerSecond = GetSlotIncomePerSecond,
+    CreatePlayerBaseName = CreatePlayerBaseName,
+    CleanupPlayerBase = CleanupPlayerBase,
+    SaveSlots = SaveSlots,
+    RestoreSlots = RestoreSlots,
+    SetupPlayerBase = SetupPlayerBase,
+}

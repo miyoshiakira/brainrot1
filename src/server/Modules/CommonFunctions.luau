@@ -31,6 +31,8 @@ end
 function CommonFunctions.dettachWithWeld(BaseModel, WeldName)
     local targetPart = BaseModel.PrimaryPart
     local weld = targetPart:FindFirstChild(WeldName)
+    print("CommonFunctions.dettachWithWeld:",targetPart)
+    print("CommonFunctions.dettachWithWeld:",weld)
     weld:Destroy()
 end
 

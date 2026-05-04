@@ -7,6 +7,7 @@ local constants = require("../Constants")
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 
 local DataManager = require(script.Parent.DataManager)
+local PlayerBaseController = require(script.Parent.PlayerBaseController)
 -- LaunchManagerなどは既存のまま
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- 配置時の高さオフセット（浮いている場合はここを下げる）
@@ -32,12 +33,13 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     -------------------------------------------------------
     -- 物理的な配置処理
     -------------------------------------------------------
+    -- 結合解除（親リセット）
+    heldModel.Parent = game.Workspace
     -- スロットへ固定処理
     CommonFunctions.enableAnchor(heldModel, false)
     -- プレイヤーのHumanoidRootPartからWeldを解除
     CommonFunctions.dettachCharacter(player)
-    -- 結合解除（親リセット）
-    heldModel.Parent = game.Workspace
+    
     -- スロットの位置へ移動
     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
     heldModel:PivotTo(targetCFrame)
@@ -52,7 +54,8 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     print(string.format("[Server] Setting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", monsterId)
     slot:SetAttribute("Occupied", true)
-
+    -- 強化ボタンの更新
+    PlayerBaseController.setupUpgradeButton(slot)
     print(string.format("[Server] %s placed %s on %s", player.Name, monsterId, slot.Name))
 
     return {
@@ -101,7 +104,8 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     print(string.format("[Server] Getting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", nil)
     slot:SetAttribute("Occupied", false)
-
+    -- 強化ボタンの更新
+    PlayerBaseController.setupUpgradeButton(slot)
     print(string.format("[Server] %s got %s on %s", player.Name, monsterId, slot.Name))
 
     return {
