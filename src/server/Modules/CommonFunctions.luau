@@ -51,13 +51,6 @@ function CommonFunctions.autoWeldModel(model)
         return 
     end
 
-    -- 1. まずは「絶対に落ちない」ように全部のアンカーを一時固定する
-    for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Anchored = true 
-        end
-    end
-
     -- 2. 安全にWeldを作成していく
     for _, part in ipairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part ~= primary then

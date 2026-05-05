@@ -7,6 +7,19 @@ local MONSTER_TAG = "Monster"
 
 local MonsterManager = {}
 
+-- 数値をフォーマット（1000 → 1K, 1000000 → 1M）
+local function formatNumber(num: number): string
+    if num >= 1000000000 then
+        return string.format("%.1fB", num / 1000000000)
+    elseif num >= 1000000 then
+        return string.format("%.1fM", num / 1000000)
+    elseif num >= 1000 then
+        return string.format("%.1fK", num / 1000)
+    else
+        return tostring(math.floor(num))
+    end
+end
+
 -- モンスターが追加された時の処理
 local function UpdateMonsterUI(monsterModel: Instance)
     if not monsterModel then return end
@@ -37,7 +50,7 @@ local function UpdateMonsterUI(monsterModel: Instance)
         
         if statsFrame:FindFirstChild("Money") then
             local AllMoney = MonsterManager.CalcIncomePerSecond(monsterModel)
-            statsFrame.Money.Text = string.format("%d $/s", AllMoney)
+            statsFrame.Money.Text = string.format("%s $/s", formatNumber(AllMoney))
         end
 
         if statsFrame:FindFirstChild("Rarity") then
@@ -75,28 +88,13 @@ function MonsterManager.MappingStatus(monsterInfo, monsterModel)
 end
 
 -- キャラクターモデルの共通セットアップ（色変更＋物理設定）
-function MonsterManager.SetupCharModel(charModel: Instance, rarity: string)
+function MonsterManager.SetupCharModel(charModel, rarity: string)
     -- レアリティに応じて色を変更
-    local rarityConfig = BrainrotMonsters.GetRarityConfig(rarity)
-    local charColor = rarityConfig and rarityConfig.Color or Color3.fromRGB(255, 255, 255)
-
-    for _, part in ipairs(charModel:GetDescendants()) do
-        if part:IsA("BasePart") and part.Name == "Body" then
-            part.Color = charColor
-            local light = part:FindFirstChild("SlimeLight")
-            if light then
-                light.Color = charColor
-            end
-        end
-    end
-
-    -- 全パーツの物理設定
-    for _, part in ipairs(charModel:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-            part.Anchored = false
-            part.Massless = true
-        end
+    local modelStr = rarity .. "Effect"
+    local effect = ReplicatedStorage:FindFirstChild("RarityEffects"):FindFirstChild(modelStr)
+    if effect then
+        local clonedEffect = effect:Clone()
+        clonedEffect.Parent = charModel.PrimaryPart
     end
 end
 
@@ -159,4 +157,5 @@ return {
     CalcIncomePerSecond = MonsterManager.CalcIncomePerSecond,
     MappingStatus = MonsterManager.MappingStatus,
     GetUpgradeCost = MonsterManager.GetUpgradeCost,
+    FormatNumber = formatNumber,
 }

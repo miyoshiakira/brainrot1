@@ -34,7 +34,6 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     -------------------------------------------------------
     -- 1. 結合解除とアンカー解除（物理演算が可能な状態にする）
     heldModel.Parent = game.Workspace
-    CommonFunctions.enableAnchor(heldModel, false) 
     CommonFunctions.dettachCharacter(player)
     
     -- 2. ネットワーク所有権をサーバーに強制奪還（アンカーがfalseのうちに実行！）
@@ -49,8 +48,6 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     heldModel:PivotTo(targetCFrame)
     -- 物理エンジンに「ここが新しい定位置だよ」と分からせるための短い猶予
     task.wait(0.1)
-    -- 4. 最後にアンカーして固定し、スロットの子供にする
-    CommonFunctions.enableAnchor(heldModel, true)
     heldModel.Parent = slot
     -------------------------------------------------------
     -- データの更新処理
@@ -98,8 +95,6 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     charModel.Parent = character
     -- プレイヤーのHumanoidRootPartにWeldを付与
     CommonFunctions.attachWithWeld(character, charModel, CommonFunctions.CharacterWeld)
-    -- スロットから解除
-    CommonFunctions.enableAnchor(charModel, false)
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------

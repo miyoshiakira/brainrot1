@@ -90,47 +90,51 @@ local function createMainUI(): ScreenGui
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = playerGui
 
-    -- 上部ステータスバー
+    -- 上部ステータスバー (右上に配置)
     local topBar = Instance.new("Frame")
     topBar.Name = "TopBar"
-    topBar.Size = UDim2.new(1, 0, 0, 60)
-    topBar.Position = UDim2.new(0, 0, 0, 0)
+    topBar.Size = UDim2.new(0, 150, 0, 90) -- コンパクトなサイズに変更
+    topBar.Position = UDim2.new(1, -160, 0, 10) -- 右上に配置
     topBar.BackgroundColor3 = COLORS.Dark
     topBar.BackgroundTransparency = 0.3
     topBar.BorderSizePixel = 0
     topBar.Parent = screenGui
 
+    local topBarCorner = Instance.new("UICorner")
+    topBarCorner.CornerRadius = UDim.new(0, 8)
+    topBarCorner.Parent = topBar
+
     -- コイン表示
     local coinsFrame = Instance.new("Frame")
     coinsFrame.Name = "CoinsFrame"
-    coinsFrame.Size = UDim2.new(0, 180, 0, 50)
-    coinsFrame.Position = UDim2.new(0, 240, 0, 5)
+    coinsFrame.Size = UDim2.new(1, -10, 0, 35)
+    coinsFrame.Position = UDim2.new(0, 5, 0, 5)
     coinsFrame.BackgroundColor3 = COLORS.Yellow
     coinsFrame.BackgroundTransparency = 0.2
     coinsFrame.BorderSizePixel = 0
     coinsFrame.Parent = topBar
 
     local coinsCorner = Instance.new("UICorner")
-    coinsCorner.CornerRadius = UDim.new(0, 12)
+    coinsCorner.CornerRadius = UDim.new(0, 8)
     coinsCorner.Parent = coinsFrame
 
     local coinsIcon = Instance.new("TextLabel")
     coinsIcon.Name = "Icon"
-    coinsIcon.Size = UDim2.new(0, 40, 1, 0)
+    coinsIcon.Size = UDim2.new(0, 30, 1, 0)
     coinsIcon.Position = UDim2.new(0, 5, 0, 0)
     coinsIcon.BackgroundTransparency = 1
     coinsIcon.Text = "＄"
-    coinsIcon.TextSize = 28
+    coinsIcon.TextSize = 20
     coinsIcon.Parent = coinsFrame
 
     local coinsLabel = Instance.new("TextLabel")
     coinsLabel.Name = "CoinsLabel"
-    coinsLabel.Size = UDim2.new(1, -50, 1, 0)
-    coinsLabel.Position = UDim2.new(0, 45, 0, 0)
+    coinsLabel.Size = UDim2.new(1, -40, 1, 0)
+    coinsLabel.Position = UDim2.new(0, 35, 0, 0)
     coinsLabel.BackgroundTransparency = 1
     coinsLabel.TextColor3 = COLORS.Dark
     coinsLabel.Text = "0"
-    coinsLabel.TextSize = 24
+    coinsLabel.TextSize = 18
     coinsLabel.Font = Enum.Font.GothamBold
     coinsLabel.TextXAlignment = Enum.TextXAlignment.Left
     coinsLabel.Parent = coinsFrame
@@ -138,34 +142,34 @@ local function createMainUI(): ScreenGui
     -- 脚力表示
     local legPowerFrame = Instance.new("Frame")
     legPowerFrame.Name = "LegPowerFrame"
-    legPowerFrame.Size = UDim2.new(0, 180, 0, 50)
-    legPowerFrame.Position = UDim2.new(0, 430, 0, 5)
+    legPowerFrame.Size = UDim2.new(1, -10, 0, 35)
+    legPowerFrame.Position = UDim2.new(0, 5, 0, 45)
     legPowerFrame.BackgroundColor3 = COLORS.Mint
     legPowerFrame.BackgroundTransparency = 0.2
     legPowerFrame.BorderSizePixel = 0
     legPowerFrame.Parent = topBar
 
     local legPowerCorner = Instance.new("UICorner")
-    legPowerCorner.CornerRadius = UDim.new(0, 12)
+    legPowerCorner.CornerRadius = UDim.new(0, 8)
     legPowerCorner.Parent = legPowerFrame
 
     local legPowerIcon = Instance.new("TextLabel")
     legPowerIcon.Name = "Icon"
-    legPowerIcon.Size = UDim2.new(0, 40, 1, 0)
+    legPowerIcon.Size = UDim2.new(0, 30, 1, 0)
     legPowerIcon.Position = UDim2.new(0, 5, 0, 0)
     legPowerIcon.BackgroundTransparency = 1
     legPowerIcon.Text = "🦵"
-    legPowerIcon.TextSize = 28
+    legPowerIcon.TextSize = 20
     legPowerIcon.Parent = legPowerFrame
 
     local legPowerLabel = Instance.new("TextLabel")
     legPowerLabel.Name = "LegPowerLabel"
-    legPowerLabel.Size = UDim2.new(1, -50, 1, 0)
-    legPowerLabel.Position = UDim2.new(0, 45, 0, 0)
+    legPowerLabel.Size = UDim2.new(1, -40, 1, 0)
+    legPowerLabel.Position = UDim2.new(0, 35, 0, 0)
     legPowerLabel.BackgroundTransparency = 1
     legPowerLabel.TextColor3 = COLORS.Dark
     legPowerLabel.Text = "0"
-    legPowerLabel.TextSize = 24
+    legPowerLabel.TextSize = 18
     legPowerLabel.Font = Enum.Font.GothamBold
     legPowerLabel.TextXAlignment = Enum.TextXAlignment.Left
     legPowerLabel.Parent = legPowerFrame
@@ -684,9 +688,15 @@ performLaunch = function()
         gaugeState.isActive = false
         -- 物理的にプレイヤーを吹き飛ばす
         local height = RemoteFunctions.LaunchRequest:InvokeServer(gaugeState.position)
+        print('物理プッシュ開始:' .. height)
+        if humanoid then
+            humanoid.WalkSpeed = 16
+            print('歩行速度を16に設定:' .. humanoid.WalkSpeed)
+        end
         if character then
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
             if humanoidRootPart and humanoid then
+                print('物理プッシュ開始')
                 -- LocalScript内
                 local launchVelocity = math.sqrt(2 * workspace.Gravity * height)
 
@@ -707,9 +717,6 @@ performLaunch = function()
             local launchContainer = ui:FindFirstChild("LaunchContainer")
             if launchContainer then
                 launchContainer.Visible = false
-                if humanoid then
-                    humanoid.WalkSpeed = 16
-                end
             end
         end
     end

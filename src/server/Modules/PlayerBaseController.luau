@@ -104,7 +104,7 @@ local function setUpMoneyBox(player)
             local currentMoney = moneyBox:GetAttribute("Money" .. player.UserId) or 0
             if amountLabel then
                 -- string.format でカンマ区切りや単位をつけると見栄えが良くなります
-                amountLabel.Text = string.format("$%d", currentMoney)
+                amountLabel.Text = string.format("$%s", MonsterManager.FormatNumber(currentMoney))
             end
         end
 
@@ -162,7 +162,7 @@ local function setupUpgradeButton(slot)
 
     prompt.Parent = upgradeButton
     prompt.ObjectText = "強化ボタン"
-    prompt.ActionText = string.format("強化する(%d)", upgradeCost)
+    prompt.ActionText = string.format("強化する(%s)", MonsterManager.FormatNumber(upgradeCost))
 -- 1. 以前の接続があれば解除する
     if upgradeConnections[slot.Name] then
         upgradeConnections[slot.Name]:Disconnect()
@@ -350,7 +350,6 @@ function RestoreSlots(player: Player)
                     local Y_OFFSET = 5.0
                     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
                     charModel:PivotTo(targetCFrame)
-                    CommonFunctions.enableAnchor(charModel, true)
                     charModel.Parent = slot
 
                     -- 属性設定（保存済みデータから復元）
