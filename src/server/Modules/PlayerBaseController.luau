@@ -347,7 +347,7 @@ function RestoreSlots(player: Player)
                     MonsterManager.SetupCharModel(charModel, rarity)
 
                     -- スロットに配置
-                    local Y_OFFSET = 3.0
+                    local Y_OFFSET = 5.0
                     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
                     charModel:PivotTo(targetCFrame)
                     CommonFunctions.enableAnchor(charModel, true)

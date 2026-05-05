@@ -11,7 +11,7 @@ local PlayerBaseController = require(script.Parent.PlayerBaseController)
 -- LaunchManagerなどは既存のまま
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- 配置時の高さオフセット（浮いている場合はここを下げる）
-local Y_OFFSET = 3.0 -- 2.0から1.0に調整。モデルのPivot位置に合わせて微調整してください
+local Y_OFFSET = 5.0 -- 2.0から1.0に調整。モデルのPivot位置に合わせて微調整してください
 
 -- キャラクターをスロットに配置（RemoteFunction）
 RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelName, slotName)
@@ -30,20 +30,26 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
         return { success = false, error = "Character data missing" }
     end
     print(string.format("[Server] Try Place %s", monsterId))
-    -------------------------------------------------------
     -- 物理的な配置処理
     -------------------------------------------------------
-    -- 結合解除（親リセット）
+    -- 1. 結合解除とアンカー解除（物理演算が可能な状態にする）
     heldModel.Parent = game.Workspace
-    -- スロットへ固定処理
-    CommonFunctions.enableAnchor(heldModel, false)
-    -- プレイヤーのHumanoidRootPartからWeldを解除
+    CommonFunctions.enableAnchor(heldModel, false) 
     CommonFunctions.dettachCharacter(player)
     
-    -- スロットの位置へ移動
-    local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
+    -- 2. ネットワーク所有権をサーバーに強制奪還（アンカーがfalseのうちに実行！）
+    -- ※これをAnchored=trueの後にやるとエラーになります
+    if heldModel.PrimaryPart then
+        heldModel.PrimaryPart:SetNetworkOwner(nil)
+    end
+
+    -- 3. 位置と回転の調整
+    local rotation = CFrame.Angles(0, 0, 0)
+    local targetCFrame = (slot.CFrame * CFrame.new(0, Y_OFFSET, 0)) * rotation
     heldModel:PivotTo(targetCFrame)
-    -- スロットへ固定処理
+    -- 物理エンジンに「ここが新しい定位置だよ」と分からせるための短い猶予
+    task.wait(0.1)
+    -- 4. 最後にアンカーして固定し、スロットの子供にする
     CommonFunctions.enableAnchor(heldModel, true)
     heldModel.Parent = slot
     -------------------------------------------------------

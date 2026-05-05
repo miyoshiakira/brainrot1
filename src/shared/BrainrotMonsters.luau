@@ -41,11 +41,31 @@ local RARITY_CONFIG = {
 -- キャラクター定義
 local CHARACTERS = {
     -- Common
-    {MonsterId = "Cute_Slime", MonsterName = "キャワスライム", ModelName = "CuteSlimeTemplate", Rarity = "Common", Money = 1.0},
-    {MonsterId = "Rare_Slime", MonsterName = "レアスライム", ModelName = "CuteSlimeTemplate", Rarity = "Rare", Money = 1.0},
-    {MonsterId = "Epic_Slime", MonsterName = "すごスライム", ModelName = "CuteSlimeTemplate", Rarity = "Epic", Money = 1.0},
-    {MonsterId = "Legendary_Slime", MonsterName = "伝説スライム", ModelName = "CuteSlimeTemplate", Rarity = "Legendary", Money = 1.0},
-    {MonsterId = "Rainbow_Slime", MonsterName = "七色スライム", ModelName = "CuteSlimeTemplate", Rarity = "Rainbow", Money = 1.0},
+    {MonsterId = "Cute_Slime", MonsterName = "キャワスライム", ModelName = "CuteSlimeTemplate", Rarity = "Common", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Rare_Slime", MonsterName = "レアスライム", ModelName = "CuteSlimeTemplate", Rarity = "Rare", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Epic_Slime", MonsterName = "すごスライム", ModelName = "CuteSlimeTemplate", Rarity = "Epic", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Legendary_Slime", MonsterName = "伝説スライム", ModelName = "CuteSlimeTemplate", Rarity = "Legendary", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Rainbow_Slime", MonsterName = "七色スライム", ModelName = "CuteSlimeTemplate", Rarity = "Rainbow", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
+    -- 【Common】基本のネタ（手に入りやすいが、全ての始まり）
+    {MonsterId = "Tamago_Chan", MonsterName = "たまごちゃん", ModelName = "TamagoChan", Rarity = "Common", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Aji_Chan", MonsterName = "あじちゃん", ModelName = "AjiChan", Rarity = "Common", Money = 1.2, HeightFrom = 0, HeightTo = math.huge},
+    -- 【Common】基本のネタ
+    {MonsterId = "Inari_Chan", MonsterName = "いなりちゃん", ModelName = "InariChan", Rarity = "Common", Money = 1.3, HeightFrom = 0, HeightTo = math.huge},
+    -- 【Rare】少し豪華なネタ（ここから収益に差が出始める）
+    {MonsterId = "Amaebi_Chan", MonsterName = "甘エビちゃん", ModelName = "AmaebiChan", Rarity = "Rare", Money = 2.5, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Salmon_Chan", MonsterName = "サーモンちゃん", ModelName = "SalmonChan", Rarity = "Rare", Money = 3.0, HeightFrom = 0, HeightTo = math.huge},
+    
+    -- 【Epic】高級ネタ（エフェクトが似合うランク）
+    {MonsterId = "Ikura_Chan", MonsterName = "いくらちゃん", ModelName = "IkuraChan", Rarity = "Epic", Money = 7.5, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Sushi_Chan", MonsterName = "マグロ先輩", ModelName = "SushiChan", Rarity = "Epic", Money = 10.0, HeightFrom = 0, HeightTo = math.huge},
+    -- 【Epic】高級ネタ（見た目が華やかで収益も高い）
+    {MonsterId = "Negitoro_Pink", MonsterName = "ねぎとろぴんく", ModelName = "NegitoroPink", Rarity = "Epic", Money = 8.8},
+    
+    -- 【Legendary】至高のネタ（なかなか出ない、プレイヤーの憧れ）
+    {MonsterId = "Uni_Chan", MonsterName = "うに殿下", ModelName = "UniChan", Rarity = "Legendary", Money = 25.0, HeightFrom = 0, HeightTo = math.huge},
+
+    -- 【Rainbow】幻のネタ（全身が輝く最強の寿司）
+    {MonsterId = "Otoro_King", MonsterName = "大トロキング", ModelName = "SushiChan", Rarity = "Rainbow", Money = 100.0, HeightFrom = 0, HeightTo = math.huge},
 }
 
 -- ユーティリティ関数
@@ -68,11 +88,16 @@ function BrainrotMonsters.GetCharacterById(id)
     return nil
 end
 
-function BrainrotMonsters.GetCharactersByRarity(rarity)
+function BrainrotMonsters.GetCharactersByRarity(rarity, height)
     local result = {}
+    local h = height or 0
     for _, char in ipairs(CHARACTERS) do
         if char.Rarity == rarity then
-            table.insert(result, char)
+            local from = char.HeightFrom or 0
+            local to = char.HeightTo or math.huge
+            if h >= from and h <= to then
+                table.insert(result, char)
+            end
         end
     end
     return result
