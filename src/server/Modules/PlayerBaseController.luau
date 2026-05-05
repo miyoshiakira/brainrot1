@@ -351,7 +351,7 @@ function RestoreSlots(player: Player)
                     local targetCFrame = slot.CFrame * CFrame.new(0, Y_OFFSET, 0)
                     charModel:PivotTo(targetCFrame)
                     charModel.Parent = slot
-
+                    CommonFunctions.enableAnchor(charModel, true)
                     -- 属性設定（保存済みデータから復元）
                     MonsterManager.MappingStatus(monsterInfo, charModel)
                     charModel:SetAttribute("Owner", player.UserId)

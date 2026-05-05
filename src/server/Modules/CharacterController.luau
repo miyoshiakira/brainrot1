@@ -48,6 +48,7 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     heldModel:PivotTo(targetCFrame)
     -- 物理エンジンに「ここが新しい定位置だよ」と分からせるための短い猶予
     task.wait(0.1)
+    CommonFunctions.enableAnchor(heldModel, true)
     heldModel.Parent = slot
     -------------------------------------------------------
     -- データの更新処理
