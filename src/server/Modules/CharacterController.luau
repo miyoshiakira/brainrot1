@@ -53,7 +53,8 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
-    
+    -- ひろうボタンの削除
+    CommonFunctions.dettachButton(heldModel)
     -- スロットの状態更新
     print(string.format("[Server] Setting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", monsterId)

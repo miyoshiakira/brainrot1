@@ -182,13 +182,27 @@ end
 
 -- プレイヤー入室時にPlayerBaseを初期化
 local function SetupPlayerBase(player: Player)
-    local playerBaseTemplate = ReplicatedStorage:FindFirstChild("PlayerBase")
-    if not playerBaseTemplate then
-        warn("[PlayerBaseController] PlayerBaseテンプレートがReplicatedStorageに見つかりません")
-        return
-    end
+    -- local playerBaseTemplate = ReplicatedStorage:FindFirstChild("PlayerBase")
+    -- if not playerBaseTemplate then
+    --     warn("[PlayerBaseController] PlayerBaseテンプレートがReplicatedStorageに見つかりません")
+    --     return
+    -- end
+    -- 現在のプレイヤー数を取得
+	local playerCount = #Players:GetPlayers()
+    local playerBase = game.Workspace:FindFirstChild("PlayerBase" .. playerCount)
+    local targetPart = game.Workspace.PlayerBasePosition -- 目印
+    
+    -- 加算度合い（1人増えるごとにどれくらいズラすか）
+	local offsetDistance = 20 -- 20スタッドずつ横にずらす
+	
+	-- 新しい座標を計算 (元の位置 + (人数 × ずらす距離))
+	-- 1人目なら +20、2人目なら +40... と加算される
+	local newCFrame = targetPart.CFrame * CFrame.new(playerCount * offsetDistance, 5, 0)
 
-    local playerBase = playerBaseTemplate:Clone()
+    -- CFrameごと（位置と向き）コピーして移動させる
+    playerBase:PivotTo(newCFrame)
+    
+
     playerBase.Name = "PlayerBase_" .. player.UserId
     playerBase.Parent = game.Workspace
 

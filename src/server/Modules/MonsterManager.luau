@@ -1,6 +1,9 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CommonFunctions = require(script.Parent.CommonFunctions)
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
+local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+local constants = require("../Constants")
 
 -- タグ名の定義
 local MONSTER_TAG = "Monster"
@@ -148,6 +151,75 @@ end
 -- プレイヤーが所有するスロットのMoney合算を取得
 -- ※この関数はPlayerBaseControllerに移動しました（循環依存回避のため）
 -- PlayerBaseController.GetSlotIncomePerSecond を使用してください
+-- キャラクター3Dモデルを生成してプレイヤーに持たせる
+function MonsterManager.SpawnCharacterModel(player: Player, monsterId: string)
+    local character = player.Character
+    if not character then return nil end
+
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
+
+    -- キャラクター定義を取得
+    local charDef = BrainrotMonsters.GetCharacterById(monsterId)
+    if not charDef then return nil end
+
+    -- スライムテンプレートを取得
+    local templatesFolder = ReplicatedStorage:FindFirstChild("CharacterTemplates")
+    local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild(charDef.ModelName)
+
+    local charModel
+
+    if slimeTemplate then
+        -- テンプレートからクローン
+        charModel = slimeTemplate:Clone()
+        -- Weld自動生成
+        CommonFunctions.autoWeldModel(charModel)
+        charModel.Name = constants.CHARACTER_MODEL_NAME
+
+        -- レアリティに応じた色変更＋物理設定
+        MonsterManager.SetupCharModel(charModel, charDef.Rarity)
+    else
+        -- フォールバック：シンプルなブロック
+        -- charModel = Instance.new("Part")
+        -- charModel.Name = "HeldCharacter_" .. player.Name
+        -- charModel.Size = Vector3.new(2, 2, 2)
+        -- charModel.Color = charColor
+        -- charModel.Material = Enum.Material.SmoothPlastic
+        -- charModel.CanCollide = false
+        -- charModel.Anchored = false
+        -- charModel.Massless = true
+    end
+
+    -- キャラクター情報を属性として保存
+    SetInitStatus(charModel, monsterId, charDef.ModelName)
+    charModel:SetAttribute("Owner", player.UserId)
+
+    -- PrimaryPartを取得（Weld用）
+    local primaryPart = charModel.PrimaryPart or charModel:FindFirstChild("Body") or (charModel:IsA("BasePart") and charModel)
+    -- Weldでプレイヤーに持たせる
+    local weld = Instance.new("WeldConstraint")
+    weld.Name = "CharacterWeld"
+    weld.Part0 = humanoidRootPart
+    weld.Part1 = primaryPart
+    weld.Parent = humanoidRootPart
+    print("LaunchManager.TryCharacterDrop:",weld)
+
+    -- プレイヤーの前に配置
+    charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
+    charModel.Parent = character
+
+    -- クライアントに通知
+    RemoteEvents.CharacterSpawned:FireClient(player, {
+        ModelName = charModel.Name,
+        Model = charModel,
+        MonsterId = monsterId,
+        MonsterName = charDef.Name,
+        Rarity = charDef.Rarity,
+        Weld = weld,
+    })
+
+    return charModel
+end
 
 return {
     SetInitStatus = SetInitStatus,
@@ -158,4 +230,5 @@ return {
     MappingStatus = MonsterManager.MappingStatus,
     GetUpgradeCost = MonsterManager.GetUpgradeCost,
     FormatNumber = formatNumber,
+    SpawnCharacterModel = MonsterManager.SpawnCharacterModel,
 }

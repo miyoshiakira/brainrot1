@@ -182,76 +182,6 @@ function LaunchManager.CalculateLaunchHeight(player: Player, gaugePosition: numb
     return height, criticalType, criticalMultiplier, isMegaJump
 end
 
--- キャラクター3Dモデルを生成してプレイヤーに持たせる
-function LaunchManager.SpawnCharacterModel(player: Player, monsterId: string)
-    local character = player.Character
-    if not character then return nil end
-
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return nil end
-
-    -- キャラクター定義を取得
-    local charDef = BrainrotMonsters.GetCharacterById(monsterId)
-    if not charDef then return nil end
-
-    -- スライムテンプレートを取得
-    local templatesFolder = ReplicatedStorage:FindFirstChild("CharacterTemplates")
-    local slimeTemplate = templatesFolder and templatesFolder:FindFirstChild(charDef.ModelName)
-
-    local charModel
-
-    if slimeTemplate then
-        -- テンプレートからクローン
-        charModel = slimeTemplate:Clone()
-        -- Weld自動生成
-        CommonFunctions.autoWeldModel(charModel)
-        charModel.Name = constants.CHARACTER_MODEL_NAME
-
-        -- レアリティに応じた色変更＋物理設定
-        MonsterManager.SetupCharModel(charModel, charDef.Rarity)
-    else
-        -- フォールバック：シンプルなブロック
-        -- charModel = Instance.new("Part")
-        -- charModel.Name = "HeldCharacter_" .. player.Name
-        -- charModel.Size = Vector3.new(2, 2, 2)
-        -- charModel.Color = charColor
-        -- charModel.Material = Enum.Material.SmoothPlastic
-        -- charModel.CanCollide = false
-        -- charModel.Anchored = false
-        -- charModel.Massless = true
-    end
-
-    -- キャラクター情報を属性として保存
-    MonsterManager.SetInitStatus(charModel, monsterId, charDef.ModelName)
-    charModel:SetAttribute("Owner", player.UserId)
-
-    -- PrimaryPartを取得（Weld用）
-    local primaryPart = charModel.PrimaryPart or charModel:FindFirstChild("Body") or (charModel:IsA("BasePart") and charModel)
-    -- Weldでプレイヤーに持たせる
-    local weld = Instance.new("WeldConstraint")
-    weld.Name = "CharacterWeld"
-    weld.Part0 = humanoidRootPart
-    weld.Part1 = primaryPart
-    weld.Parent = humanoidRootPart
-    print("LaunchManager.TryCharacterDrop:",weld)
-
-    -- プレイヤーの前に配置
-    charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
-    charModel.Parent = character
-
-    -- クライアントに通知
-    RemoteEvents.CharacterSpawned:FireClient(player, {
-        ModelName = charModel.Name,
-        Model = charModel,
-        MonsterId = monsterId,
-        MonsterName = charDef.Name,
-        Rarity = charDef.Rarity,
-        Weld = weld,
-    })
-
-    return charModel
-end
-
 -- キャラクタードロップ処理
 function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): string?
     local profile = DataManager.GetProfile(player)
@@ -292,7 +222,7 @@ function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): s
     end
 
     -- 3Dモデルを生成してプレイヤーに持たせる
-    LaunchManager.SpawnCharacterModel(player, selectedChar.MonsterId)
+    MonsterManager.SpawnCharacterModel(player, selectedChar.MonsterId)
 
     return selectedChar.MonsterId
 end

@@ -1,3 +1,5 @@
+local ServerScriptService = game:GetService("ServerScriptService")
+local Constants = require(ServerScriptService.Server.Constants)
 -- ServerScriptService/Server/Modules/CommonFunctions
 local CharacterWeld = "CharacterWeld"
 local CommonFunctions = { CharacterWeld = CharacterWeld }
@@ -6,6 +8,20 @@ local CommonFunctions = { CharacterWeld = CharacterWeld }
 function CommonFunctions.dettachCharacter(player)
     -- プレイヤーのHumanoidRootPartからWeldを解除
     CommonFunctions.dettachWithWeld(player.Character, CharacterWeld)
+end
+
+-- 物理的な接続（Weld）を安全に行う共通関数
+function CommonFunctions.dettachButton(target)
+    -- プレイヤーのHumanoidRootPartからWeldを解除
+    local targetButton = target:FindFirstChildOfClass("ProximityPrompt")
+    if targetButton then
+        targetButton:Destroy()
+    end
+end
+
+-- 運んでいるかどうか
+function CommonFunctions.isCarrying(player)
+    return player.Character:FindFirstChild(Constants.CHARACTER_MODEL_NAME)
 end
 
 -- 物理的な接続（Weld）を安全に行う共通関数

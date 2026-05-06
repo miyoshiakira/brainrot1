@@ -20,6 +20,7 @@ local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 local _CharacterController = require(script.Modules.CharacterController)
 local MonsterManager = require(script.Modules.MonsterManager)
 local PlayerBaseController = require(script.Modules.PlayerBaseController)
+local ThrowAction = require(script.Modules.ThrowAction)
 
 print("CharacterController has been initialized.")
 print("=================================")
@@ -46,6 +47,8 @@ local CommonFunctions = require(script.Modules.CommonFunctions)
 local moneyBox = CommonFunctions.findModelById(game.workspace, "MoneyBox")
 
 local CollectionService = game:GetService("CollectionService")
+local FishManager = require(script.Modules.FishManager)
+local ThrowAction = require(script.Modules.ThrowAction)
 
 
 -- プレイヤー退室処理（スロット同期後にDataManagerが保存）
@@ -116,6 +119,14 @@ end
 
 -- LaunchManagerを初期化
 LaunchManager.Initialize()
+-- 釣りシステムを初期化
+print("[Server] 釣りシステムを初期化")
+FishManager.Initialize()
+-- 投げシステムを初期化
+print("[Server] 投げシステムを初期化")
+ThrowAction.Initialize()
+
+print("[Server] 初期化完了")
 
 -- 自動保存（3分ごとにスロット同期＋プロファイル保存）
 task.spawn(function()
@@ -134,5 +145,3 @@ task.spawn(function()
         end
     end
 end)
-
-print("[Server] 初期化完了")

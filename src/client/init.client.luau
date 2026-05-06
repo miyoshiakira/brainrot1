@@ -60,15 +60,6 @@ local gaugeState = {
 -- Rainbow Rain状態
 local rainbowRainActive = false
 
--- ========================================
--- キャラクター運搬システム（一元管理）
--- ========================================
-local CarrySystem = {
-    heldModel = nil,      -- 現在持っているモデル
-    isCarrying = false,   -- 運搬中フラグ
-    weld = nil,           -- 現在のWeld参照
-}
-
 -- キャラクター収集状態
 local characterCollection = {}
 local activeMonsterId = nil
@@ -907,47 +898,25 @@ local function showCharacterCollected(charData)
 end
 
 -- ========================================
--- キャラクター運搬システム（共通化）
+-- キャラクター運搬判定（DisplayMonsterの有無で判定）
 -- ========================================
+local CHARACTER_MODEL_NAME = "DisplayMonster"
 
--- 運搬状態を完全にリセット
-local function resetCarryState()
-    -- 既存のWeldを削除
-    if CarrySystem.weld and CarrySystem.weld.Parent then
-        CarrySystem.weld:Destroy()
-    end
-    CarrySystem.weld = nil
-    CarrySystem.heldModel = nil
-    CarrySystem.isCarrying = false
+local function getHeldModel()
+    local character = player.Character
+    if not character then return nil end
+    return character:FindFirstChild(CHARACTER_MODEL_NAME)
 end
 
-local function pickupCharacter(targetModel, monsterId, weld)
-    if CarrySystem.isCarrying then return false end
-
-    local character = player.Character
-    local hrp = character and character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-
-    -- 4. 状態更新（複製品を管理対象にする）
-    CarrySystem.heldModel = targetModel
-    CarrySystem.weld = weld
-    CarrySystem.isCarrying = true
-
-    print("[CarrySystem] 複製して拾い上げました:", monsterId)
-    print(string.format("[CarrySystem] %s", CarrySystem.heldModel.Name))
-    return true
+local function isCarrying()
+    return getHeldModel() ~= nil
 end
 
 local function placeCharacter(slot)
-    if not CarrySystem.isCarrying or not CarrySystem.heldModel then return false end
-    -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
-    -- RemoteFunctionを使って成否を受け取るのがスマートです
-    local success, errorMessage = RemoteFunctions.CharacterPlaceTry:InvokeServer(CarrySystem.heldModel.Name, slot.Name)
+    local heldModel = getHeldModel()
+    if not heldModel then return false end
+    local success, errorMessage = RemoteFunctions.CharacterPlaceTry:InvokeServer(heldModel.Name, slot.Name)
     if success then
-        -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
-        CarrySystem.weld = nil
-        CarrySystem.heldModel = nil
-        CarrySystem.isCarrying = false
         showNotification("✅ 配置完了!", "スロットに配置しました", COLORS.Good)
         return true
     else
@@ -958,16 +927,10 @@ end
 
 -- スロットからキャラクターを取り外す
 local function removeFromSlot(slot)
-    if CarrySystem.isCarrying and CarrySystem.heldModel then return true end
-    -- サーバーに「このモデルを、このスロットに置きたい」とリクエスト
-    -- RemoteFunctionを使って成否を受け取るのがスマートです
+    if isCarrying() then return true end
     local data = RemoteFunctions.CharacterPickupTry:InvokeServer(slot.Name)
     if data.success then
-        -- サーバー側で配置・固定・削除が完了したので、手元の管理をクリアするだけ
         print(string.format("[Client] heldModel: %s", data.heldModel.Name))
-        CarrySystem.weld = data.weld
-        CarrySystem.heldModel = data.heldModel
-        CarrySystem.isCarrying = true
         showNotification("✅ 取得完了!", "スロットから取り上げました", COLORS.Good)
         return true
     else
@@ -982,23 +945,7 @@ createMainUI()
 
 -- プレイヤー死亡時に運搬状態をリセット
 player.CharacterAdded:Connect(function(character)
-    -- キャラクターが再スポーンしたら運搬状態をリセット
-    if CarrySystem.isCarrying then
-        print("[CarrySystem] リスポーンによりリセット")
-        resetCarryState()
-    end
-
-    -- Humanoidの死亡を監視
-    local humanoid = character:WaitForChild("Humanoid")
-    humanoid.Died:Connect(function()
-        if CarrySystem.isCarrying and CarrySystem.heldModel then
-            -- 持っていたモデルを削除
-            if CarrySystem.heldModel.Parent then
-                CarrySystem.heldModel:Destroy()
-            end
-        end
-        resetCarryState()
-    end)
+    
 end)
 
 -- ゲージ更新ループ
@@ -1079,7 +1026,7 @@ end)
 -- キャラクター3Dモデル生成イベント
 RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
     -- 既に運搬中なら無視
-    if CarrySystem.isCarrying then
+    if isCarrying() then
         print("[CharacterSpawned] 既に運搬中のためスキップ")
         return
     end
@@ -1088,12 +1035,11 @@ RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
     task.wait(0.3)
 
     local modelName = data.Model.Name
-    local weld = data.Weld
     local monsterId = data.MonsterId
     local model = data.Model
 
     if model then
-        pickupCharacter(model, monsterId, weld)
+        print("[CharacterSpawned] モデル生成完了:", monsterId)
     else
         warn("[CharacterSpawned] モデルが見つかりません:", modelName)
     end
@@ -1115,11 +1061,11 @@ end
 
 -- ゴミ箱アクション
 RemoteFunctions.TrashBoxAction.OnClientInvoke = function(player)
-    -- TODO: キャラクターをゴミ箱に破棄する処理を追加
     print("[TrashBoxAction] ゴミ箱アクションが呼び出されました")
-    CarrySystem.isCarrying = false
-    CarrySystem.heldModel = nil
-    CarrySystem.weld = nil
+    local heldModel = getHeldModel()
+    if heldModel then
+        heldModel:Destroy()
+    end
     return true
 end
 
@@ -1132,7 +1078,7 @@ RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
     if not launchContainer then return nil end
 
     -- 運搬中は発射不可
-    if CarrySystem.isCarrying then
+    if isCarrying() then
         showNotification("⚠️ 運搬中", "キャラクターを置いてから発射してください", COLORS.Yellow)
         return false
     end
@@ -1182,5 +1128,9 @@ task.spawn(function()
         end
     end
 end)
+
+-- UIボタン初期化（投げアクション等）
+local UIInit = require(script.UIInit)
+UIInit.Initialize()
 
 print("[Client] 初期化完了")
