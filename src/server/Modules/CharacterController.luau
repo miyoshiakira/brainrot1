@@ -44,7 +44,7 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
 
     -- 3. 位置と回転の調整
     local rotation = CFrame.Angles(0, 0, 0)
-    local targetCFrame = (slot.CFrame * CFrame.new(0, Y_OFFSET, 0)) * rotation
+    local targetCFrame = (slot.PrimaryPart.CFrame * CFrame.new(0, Y_OFFSET, 0)) * rotation
     heldModel:PivotTo(targetCFrame)
     -- 物理エンジンに「ここが新しい定位置だよ」と分からせるための短い猶予
     task.wait(0.1)
