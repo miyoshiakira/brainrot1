@@ -175,6 +175,10 @@ function MonsterManager.SpawnCharacterModel(player: Player, monsterId: string)
         -- Weld自動生成
         CommonFunctions.autoWeldModel(charModel)
         charModel.Name = constants.CHARACTER_MODEL_NAME
+        
+        -- 第1引数に「対象のインスタンス」、第2引数に「付けたいタグ名（文字列）」を入れます
+        local CollectionService = game:GetService("CollectionService")
+        CollectionService:AddTag(charModel, "Monster")
 
         -- レアリティに応じた色変更＋物理設定
         MonsterManager.SetupCharModel(charModel, charDef.Rarity)
