@@ -22,6 +22,9 @@ export type ProfileData = {
     Height: number,
     FishingPower: number,
 
+    -- 装備
+    EquippedRodName: string?,  -- 釣り竿名（例: "FishingRod1"）
+
     -- ブレインロット収集
     TotalCharactersCollected: number,  -- 総収集数
 
@@ -50,6 +53,9 @@ local ProfileTemplate: ProfileData = {
     -- 高度（Brainrot Launch Simulator用）
     Height = 0,
     FishingPower = 1,
+
+    -- 装備
+    EquippedRodName = nil,
 
     -- ブレインロット収集
     TotalCharactersCollected = 0,

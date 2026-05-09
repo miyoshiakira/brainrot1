@@ -3,6 +3,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CommonFunctions = require(script.Parent.CommonFunctions)
 local CommonAnimationFunctions = require(script.Parent.CommonAnimationFunctions)
+local EquipmentSystem = require(script.Parent.EquipmentSystem)
 local DataManager = require(script.Parent.DataManager)
 local MonsterManager = require(script.Parent.MonsterManager)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
@@ -321,14 +322,22 @@ function CleanupPlayerBase(player: Player)
     end
 end
 
+local DEFAULT_ROD_NAME = "FishingRod1"
+
 -- 現在のスロット状態をプロファイルに保存
 function SaveSlots(player: Player)
-
     local slots = FindPlayerSlots(player)
     for _, slot in ipairs(slots) do
         setupUpgradeButton(slot)
     end
     DataManager.SaveSlotData(player, slots)
+
+    -- 釣り竿名をプロファイルに保存
+    local rodName = EquipmentSystem.getFishingRodName(player)
+    local profile = DataManager.GetProfile(player)
+    if profile then
+        profile.EquippedRodName = rodName
+    end
 end
 
 -- プロファイルからスロット状態を復元（モンスターをスロットに配置）
@@ -398,6 +407,22 @@ function RestoreSlots(player: Player)
     end
 end
 
+-- 釣り竿をプロファイルから復元して装備
+function EquipFishingRod(player: Player)
+    local profile = DataManager.GetProfile(player)
+    if not profile then return end
+
+    -- キャラクターがまだスポーンしていない場合は待機
+    local character = player.Character
+    if not character then
+        character = player.CharacterAdded:Wait()
+    end
+
+    local rodName = profile.EquippedRodName or DEFAULT_ROD_NAME
+    EquipmentSystem.equipFishingRod(player, rodName)
+    print(string.format("[PlayerBaseController] %s に釣り竿 %s を装備", player.Name, rodName))
+end
+
 return {
     setupUpgradeButton = setupUpgradeButton,
     FindPlayerBase = FindPlayerBase,
@@ -408,5 +433,6 @@ return {
     CleanupPlayerBase = CleanupPlayerBase,
     SaveSlots = SaveSlots,
     RestoreSlots = RestoreSlots,
+    EquipFishingRod = EquipFishingRod,
     SetupPlayerBase = SetupPlayerBase,
 }

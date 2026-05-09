@@ -210,7 +210,7 @@ function LaunchManager.TryCharacterDrop(player: Player, criticalType: string): s
     if not rarity then return nil end
 
     -- そのレアリティのキャラクターからランダム選択
-    local characters = BrainrotMonsters.GetCharactersByRarity(rarity, profile.Height)
+    local characters = BrainrotMonsters.GetCharactersByRarity(rarity, profile.FishingPower or 0)
     if #characters == 0 then return nil end
 
     local selectedChar = characters[math.random(1, #characters)]

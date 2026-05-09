@@ -58,6 +58,12 @@ Players.PlayerRemoving:Connect(function(player)
     if slots then
         DataManager.SaveSlotData(player, slots)
     end
+
+    -- 釣り竿名をプロファイルに保存
+    local profile = DataManager.GetProfile(player)
+    if profile then
+        profile.EquippedRodName = require(script.Modules.EquipmentSystem).getFishingRodName(player)
+    end
 end)
 
 -- プレイヤー入室処理
@@ -78,6 +84,9 @@ Players.PlayerAdded:Connect(function(player)
 
         -- 保存済みのスロット配置を復元（プロファイル読み込み後であること）
         PlayerBaseController.RestoreSlots(player)
+
+        -- 釣り竿を装備（保存済みがなければFishingRod1）
+        PlayerBaseController.EquipFishingRod(player)
 
         -- 初期お金を通知
         RemoteEvents.MoneyChanged:FireClient(player, profile.Money)

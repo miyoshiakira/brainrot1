@@ -41,54 +41,31 @@ local RARITY_CONFIG = {
 -- キャラクター定義
 local CHARACTERS = {
     -- 【Common】基本のネタ（手に入りやすいが、全ての始まり）
-    {MonsterId = "Tamago_Chan", MonsterName = "たまごちゃん", ModelName = "TamagoChan", Rarity = "Common", Money = 1.0, HeightFrom = 0, HeightTo = math.huge},
-    {MonsterId = "Aji_Chan", MonsterName = "あじちゃん", ModelName = "AjiChan", Rarity = "Common", Money = 1.2, HeightFrom = 0, HeightTo = math.huge},
-    {MonsterId = "Ika_Chan", MonsterName = "いかちゃん", ModelName = "IkaChan", Rarity = "Common", Money = 1.1},
-    {MonsterId = "Inari_Chan", MonsterName = "いなりちゃん", ModelName = "InariChan", Rarity = "Common", Money = 1.3, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Tamago_Chan", MonsterName = "たまごちゃん", ModelName = "TamagoChan", Rarity = "Common", Money = 1.0, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Aji_Chan", MonsterName = "あじちゃん", ModelName = "AjiChan", Rarity = "Common", Money = 1.2, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Ika_Chan", MonsterName = "いかちゃん", ModelName = "IkaChan", Rarity = "Common", Money = 1.1, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Inari_Chan", MonsterName = "いなりちゃん", ModelName = "InariChan", Rarity = "Common", Money = 1.3, PowerFrom = 0, PowerTo = math.huge},
     -- 【Rare】少し豪華なネタ（ここから収益に差が出始める）
-    {MonsterId = "Hokkigai_Chan", MonsterName = "ほっきちゃん", ModelName = "HokkigaiChan", Rarity = "Rare", Money = 2.9},
-    {MonsterId = "Amaebi_Chan", MonsterName = "甘エビちゃん", ModelName = "AmaebiChan", Rarity = "Rare", Money = 2.5, HeightFrom = 0, HeightTo = math.huge},
-    {MonsterId = "Salmon_Chan", MonsterName = "サーモンちゃん", ModelName = "SalmonChan", Rarity = "Rare", Money = 3.0, HeightFrom = 0, HeightTo = math.huge},
-    {MonsterId = "Hotate_Chan", MonsterName = "ほたてちゃん", ModelName = "HotateChan", Rarity = "Rare", Money = 2.8},
-    {MonsterId = "Tsubugai_Chan", MonsterName = "つぶがいちゃん", ModelName = "TsubugaiChan", Rarity = "Rare", Money = 2.7},
--- 【Rare】色彩豊かな職人技（装飾はないが、色のコントラストが美しい）
-    {
-        MonsterId = "Cobalt_Saba", 
-        MonsterName = "コバルトしめさば君", 
-        ModelName = "CobaltSabaChan", 
-        Rarity = "Rare", 
-        Money = 5.0,
-        HeightFrom = 0, HeightTo = math.huge
-    },
+    {MonsterId = "Hokkigai_Chan", MonsterName = "ほっきちゃん", ModelName = "HokkigaiChan", Rarity = "Rare", Money = 2.9, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Amaebi_Chan", MonsterName = "甘エビちゃん", ModelName = "AmaebiChan", Rarity = "Rare", Money = 2.5, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Salmon_Chan", MonsterName = "サーモンちゃん", ModelName = "SalmonChan", Rarity = "Rare", Money = 3.0, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Hotate_Chan", MonsterName = "ほたてちゃん", ModelName = "HotateChan", Rarity = "Rare", Money = 2.8, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Tsubugai_Chan", MonsterName = "つぶがいちゃん", ModelName = "TsubugaiChan", Rarity = "Rare", Money = 2.7, PowerFrom = 0, PowerTo = math.huge},
+    -- 【Rare】色彩豊かな職人技（装飾はないが、色のコントラストが美しい）
+    {MonsterId = "Cobalt_Saba", MonsterName = "コバルトしめさば君", ModelName = "CobaltSabaChan", Rarity = "Rare", Money = 5.0, PowerFrom = 0, PowerTo = math.huge},
     -- 【Epic】高級ネタ（エフェクトが似合うランク）
-    {MonsterId = "Ikura_Chan", MonsterName = "いくらちゃん", ModelName = "IkuraChan", Rarity = "Epic", Money = 7.5, HeightFrom = 0, HeightTo = math.huge},
-    {MonsterId = "Sushi_Chan", MonsterName = "マグロ先輩", ModelName = "SushiChan", Rarity = "Epic", Money = 10.0, HeightFrom = 0, HeightTo = math.huge},
--- 【Epic】透明感と色彩の調和（シンプルだが高貴な存在）
-
-    {
-        MonsterId = "Crystal_Kajiki", 
-        MonsterName = "クリスタルかじき様", 
-        ModelName = "CrystalKajikiChan", 
-        Rarity = "Epic", 
-        Money = 12.0,
-        HeightFrom = 0, HeightTo = math.huge
-    },
--- 【Epic】深い味わいと色味（シンプルだが職人のこだわりを感じる一品）
-    {
-        MonsterId = "Golden_Anago", 
-        MonsterName = "黄金あなご伯爵", 
-        ModelName = "AnagoHakushaku", 
-        Rarity = "Epic", 
-        Money = 9.0,
-        HeightFrom = 0, HeightTo = math.huge
-    },
+    {MonsterId = "Ikura_Chan", MonsterName = "いくらちゃん", ModelName = "IkuraChan", Rarity = "Epic", Money = 7.5, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Sushi_Chan", MonsterName = "マグロ先輩", ModelName = "SushiChan", Rarity = "Epic", Money = 10.0, PowerFrom = 0, PowerTo = math.huge},
+    -- 【Epic】透明感と色彩の調和（シンプルだが高貴な存在）
+    {MonsterId = "Crystal_Kajiki", MonsterName = "クリスタルかじき様", ModelName = "CrystalKajikiChan", Rarity = "Epic", Money = 12.0, PowerFrom = 0, PowerTo = math.huge},
+    -- 【Epic】深い味わいと色味（シンプルだが職人のこだわりを感じる一品）
+    {MonsterId = "Golden_Anago", MonsterName = "黄金あなご伯爵", ModelName = "AnagoHakushaku", Rarity = "Epic", Money = 9.0, PowerFrom = 0, PowerTo = math.huge},
     -- 【Epic】高級ネタ（見た目が華やかで収益も高い）
-    {MonsterId = "Negitoro_Pink", MonsterName = "ねぎとろぴんく", ModelName = "NegitoroChan", Rarity = "Epic", Money = 8.8},
-    
+    {MonsterId = "Negitoro_Pink", MonsterName = "ねぎとろぴんく", ModelName = "NegitoroChan", Rarity = "Epic", Money = 8.8, PowerFrom = 0, PowerTo = math.huge},
     -- 【Legendary】至高のネタ（なかなか出ない、プレイヤーの憧れ）
-    {MonsterId = "Uni_Chan", MonsterName = "うに殿下", ModelName = "UniChan", Rarity = "Legendary", Money = 25.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Uni_Chan", MonsterName = "うに殿下", ModelName = "UniChan", Rarity = "Legendary", Money = 25.0, PowerFrom = 0, PowerTo = math.huge},
     -- 【Rainbow】幻のネタ（全身が輝く最強の寿司）
-    {MonsterId = "Otoro_King", MonsterName = "大トロキング", ModelName = "SushiChan", Rarity = "Rainbow", Money = 100.0, HeightFrom = 0, HeightTo = math.huge},
+    {MonsterId = "Otoro_King", MonsterName = "大トロキング", ModelName = "SushiChan", Rarity = "Rainbow", Money = 100.0, PowerFrom = 0, PowerTo = math.huge},
 }
 
 -- ユーティリティ関数
@@ -111,14 +88,14 @@ function BrainrotMonsters.GetCharacterById(id)
     return nil
 end
 
-function BrainrotMonsters.GetCharactersByRarity(rarity, height)
+function BrainrotMonsters.GetCharactersByRarity(rarity, fishingPower)
     local result = {}
-    local h = height or 0
+    local p = fishingPower or 0
     for _, char in ipairs(CHARACTERS) do
         if char.Rarity == rarity then
-            local from = char.HeightFrom or 0
-            local to = char.HeightTo or math.huge
-            if h >= from and h <= to then
+            local from = char.PowerFrom or 0
+            local to = char.PowerTo or math.huge
+            if p >= from and p <= to then
                 table.insert(result, char)
             end
         end

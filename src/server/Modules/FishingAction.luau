@@ -41,7 +41,7 @@ local function ProcessFishing(player, fishBox)
     if not rarity then return false end
 
     -- キャラクター選択
-    local characters = BrainrotMonsters.GetCharactersByRarity(rarity, profile.Height or 0)
+    local characters = BrainrotMonsters.GetCharactersByRarity(rarity, profile.FishingPower or 0)
     if #characters == 0 then return false end
 
     local selectedChar = characters[math.random(1, #characters)]
