@@ -1,6 +1,7 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CommonFunctions = require(script.Parent.CommonFunctions)
+local CommonAnimationFunctions = require(script.Parent.CommonAnimationFunctions)
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local constants = require("../Constants")
@@ -22,6 +23,15 @@ local function formatNumber(num: number): string
         return tostring(math.floor(num))
     end
 end
+
+-- レアリティごとのUI色・サイズ設定
+local RARITY_UI: {[string]: {Color3: Color3?, TextSize: number?}} = {
+    Common =     {Color3 = Color3.fromRGB(180, 180, 180)},
+    Rare =       {Color3 = Color3.fromRGB(80, 130, 255)},
+    Epic =       {Color3 = Color3.fromRGB(180, 70, 255)},
+    Legendary =  {Color3 = Color3.fromRGB(255, 200, 50), TextSize = 14},
+    Rainbow =    {Color3 = Color3.fromRGB(255, 100, 200), TextSize = 16},
+}
 
 -- モンスターが追加された時の処理
 local function UpdateMonsterUI(monsterModel: Instance)
@@ -57,7 +67,17 @@ local function UpdateMonsterUI(monsterModel: Instance)
         end
 
         if statsFrame:FindFirstChild("Rarity") then
-            statsFrame.Rarity.Text = tostring(monsterRarity or "?")
+            local rarityLabel = statsFrame.Rarity
+            rarityLabel.Text = tostring(monsterRarity or "?")
+            local uiConfig = RARITY_UI[monsterRarity]
+            if uiConfig then
+                if uiConfig.Color3 then
+                    rarityLabel.TextColor3 = uiConfig.Color3
+                end
+                if uiConfig.TextSize then
+                    rarityLabel.TextSize = uiConfig.TextSize
+                end
+            end
         end
 
         print(monsterModel.Name .. " のUIを初期化しました。")

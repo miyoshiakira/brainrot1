@@ -24,6 +24,11 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
         return { success = false, error = "Invalid Request" }
     end
 
+    -- アニメーション中は操作不可
+    if heldModel:GetAttribute("IsAnimating") then
+        return { success = false, error = "アニメーション中です" }
+    end
+
     local monsterId = heldModel:GetAttribute("MonsterId")
     if not monsterId then
         print('キャラクターID不正')
@@ -42,9 +47,10 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
         heldModel.PrimaryPart:SetNetworkOwner(nil)
     end
 
-    -- 3. 位置と回転の調整
-    local rotation = CFrame.Angles(0, 0, 0)
-    local targetCFrame = (slot.PrimaryPart.CFrame * CFrame.new(0, Y_OFFSET, 0)) * rotation
+    -- 3. 位置と回転の調整（スロットの前方を向くよう回転を強制）
+    local slotCFrame = slot.PrimaryPart.CFrame
+    local targetPosition = slotCFrame.Position + Vector3.new(0, Y_OFFSET, 0)
+    local targetCFrame = CFrame.new(targetPosition, slotCFrame.LookVector * 1e6)
     heldModel:PivotTo(targetCFrame)
     -- 物理エンジンに「ここが新しい定位置だよ」と分からせるための短い猶予
     task.wait(0.1)
@@ -84,6 +90,11 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     -- 1. 名前を指定してピンポイント破壊
     local charModel = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
     if not charModel then return nil end
+
+    -- アニメーション中は操作不可
+    if charModel:GetAttribute("IsAnimating") then
+        return { success = false, errorMessage = "アニメーション中です" }
+    end
     
     local character = player.Character
     if not character then return nil end

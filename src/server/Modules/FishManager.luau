@@ -1,7 +1,7 @@
 local FishManager = {} -- ★1: モジュール用のテーブル定義が必要
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local riverPart = game.Workspace:FindFirstChild("FishColliderBox")
-local FishingAction = require(script.Parent.FinsingAction)
+local FishingAction = require(script.Parent.FishingAction)
 
 -- FishBoxAnimationモジュールを読み込む
 

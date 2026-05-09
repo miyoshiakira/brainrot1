@@ -2,9 +2,11 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CommonFunctions = require(script.Parent.CommonFunctions)
+local CommonAnimationFunctions = require(script.Parent.CommonAnimationFunctions)
 local DataManager = require(script.Parent.DataManager)
 local MonsterManager = require(script.Parent.MonsterManager)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
+local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local constants = require("../Constants")
 
 -- スロットの挙動を初期化する関数
@@ -13,7 +15,7 @@ local function setupSlot(slot)
     if slot:FindFirstChildOfClass("ProximityPrompt") then return end
 
     local prompt = Instance.new("ProximityPrompt")
-    prompt.Parent = slot
+    prompt.Parent = slot.PrimaryPart
     prompt.ObjectText = "スロット"
     prompt.ActionText = "配置する"    
     prompt.Triggered:Connect(function(player)
@@ -125,6 +127,11 @@ local function upgradeCharacter(player, UpgradeButton, upgradeCost)
         return { success = false, error = "No character on slot" }
     end
 
+    -- アニメーション中は強化不可
+    if character:GetAttribute("IsAnimating") then
+        return { success = false, error = "アニメーション中です" }
+    end
+
     local currentLevel = character:GetAttribute("Level") or 1
 
     -- お金の減算（残高不足なら失敗）
@@ -136,9 +143,18 @@ local function upgradeCharacter(player, UpgradeButton, upgradeCost)
     -- レベルアップ
     character:SetAttribute("Level", currentLevel + 1)
 
+    -- 強化演出：回転しながら上昇→下降（終了時にスロットの前方を向く）
+    local slot = UpgradeButton.Parent
+    local slotPrimary = slot.PrimaryPart or slot:FindFirstChildWhichIsA("BasePart")
+    local Y_OFFSET = 5.0
+    local slotCFrame = slotPrimary.CFrame
+    local targetPosition = slotCFrame.Position + Vector3.new(0, Y_OFFSET, 0)
+    local finalCFrame = CFrame.new(targetPosition, slotCFrame.LookVector * 1e6)
+    CommonAnimationFunctions.levelUpAnimation(character, 3, 0.5, finalCFrame)
+
     print(string.format("[Upgrade] %s: Lv.%d → Lv.%d (cost: %d)", character.Name, currentLevel, currentLevel + 1, upgradeCost))
 
-    return character
+    return { success = true, character = character }
 end
 
 local upgradeConnections = {} -- 接続を保存しておくためのテーブル
@@ -171,12 +187,14 @@ local function setupUpgradeButton(slot)
         upgradeConnections[slot.Name] = nil
     end
     upgradeConnections[slot.Name] = prompt.Triggered:Connect(function(player)
-        -- ここに「持っているものを置く」共通ロジック
-        -- クライアントに通知
         print("UpgradeButton:Parent Test:", upgradeButton.Parent)
-        local monster = upgradeCharacter(player, upgradeButton, upgradeCost)
-        print(string.format("Upgrade: %s", monster.Name))
-        MonsterManager.UpdateMonsterUI(monster)
+        local result = upgradeCharacter(player, upgradeButton, upgradeCost)
+        if result.success == false then
+            -- 強化失敗：クライアントに通知
+            RemoteEvents.NotifyPlayer:FireClient(player, "⚠️ 強化失敗", result.error or "強化できませんでした")
+            return
+        end
+        MonsterManager.UpdateMonsterUI(result.character)
         -- コスト更新
         setupUpgradeButton(slot)  
     end)
@@ -192,18 +210,6 @@ local function SetupPlayerBase(player: Player)
     -- 現在のプレイヤー数を取得
 	local playerCount = #Players:GetPlayers()
     local playerBase = game.Workspace:FindFirstChild("PlayerBase" .. playerCount)
-    local targetPart = game.Workspace.PlayerBasePosition -- 目印
-    
-    -- 加算度合い（1人増えるごとにどれくらいズラすか）
-	local offsetDistance = 20 -- 20スタッドずつ横にずらす
-	
-	-- 新しい座標を計算 (元の位置 + (人数 × ずらす距離))
-	-- 1人目なら +20、2人目なら +40... と加算される
-	local newCFrame = targetPart.CFrame * CFrame.new(playerCount * offsetDistance, 5, 0)
-
-    -- CFrameごと（位置と向き）コピーして移動させる
-    playerBase:PivotTo(newCFrame)
-    
 
     playerBase.Name = CreatePlayerBaseName(player)
     playerBase.Parent = game.Workspace

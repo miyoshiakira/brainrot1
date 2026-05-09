@@ -4,14 +4,24 @@ local DataManager = require(script.Parent.DataManager)
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters).BrainrotMonsters
 local MonsterManager = require(script.Parent.MonsterManager)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+local FishingSplashEffect = require(script.Parent.FishingSplashEffect)
 
 -- 釣り設定
 local FISHING_CONFIG = {
-    CharacterDropRate = 1.0, -- 釣りの時のキャラクタドロップ率
+    CharacterDropRate = 1.0, -- 釣りの時のキャラクタードロップ率
+    AnimationDuration = 2.0, -- エフェクト再生中のロック時間
 }
+
+-- プレイヤーごとの釣りロック
+local fishingLock: {[number]: boolean} = {}
 
 local function ProcessFishing(player, fishBox)
     
+    -- エフェクト再生中は釣り不可
+    if fishingLock[player.UserId] then
+        return false
+    end
+
     if CommonFunctions.isCarrying(player) then
         print(string.format("[FishingAction] %s は既にキャラクターを運んでいます！", player.Name))
         return false
@@ -40,6 +50,13 @@ local function ProcessFishing(player, fishBox)
     if rarity == "Rainbow" then
         profile.RainbowCharactersFound = (profile.RainbowCharactersFound or 0) + 1
     end
+
+    -- 水しぶきエフェクト（ロック中は他の釣り不可）
+    fishingLock[player.UserId] = true
+    FishingSplashEffect.Play(fishBox:GetPivot())
+    task.delay(FISHING_CONFIG.AnimationDuration, function()
+        fishingLock[player.UserId] = nil
+    end)
 
     -- キャラクターをプレイヤーに持たせる
     MonsterManager.SpawnCharacterModel(player, selectedChar.MonsterId)

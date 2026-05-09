@@ -119,6 +119,13 @@ local function Initialize()
     hitbox.Touched:Connect(function(hit)
         local monsterModel = hit:FindFirstAncestorWhichIsA("Model")
         if not monsterModel then return end
+
+        -- プレイヤーが所持中のキャラクターは食べない
+        local parentModel = monsterModel.Parent
+        if parentModel and parentModel:IsA("Model") and parentModel:FindFirstChild("Humanoid") then
+            return
+        end
+
         print("EAT try")
         if CollectionService:HasTag(monsterModel, "Monster") and not eatenMonsters[monsterModel] then
             eatenMonsters[monsterModel] = true
