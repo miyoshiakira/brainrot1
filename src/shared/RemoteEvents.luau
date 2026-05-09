@@ -46,14 +46,7 @@ end
 RemoteEvents.MoneyChanged = getOrCreateRemoteEvent("MoneyChanged")
 RemoteEvents.ObjectUnlocked = getOrCreateRemoteEvent("ObjectUnlocked")
 RemoteEvents.NotifyPlayer = getOrCreateRemoteEvent("NotifyPlayer")
-
--- Brainrot Launch Simulator用イベント
-RemoteEvents.HeightChanged = getOrCreateRemoteEvent("HeightChanged")
 RemoteEvents.FishingPowerChanged = getOrCreateRemoteEvent("FishingPowerChanged")
-RemoteEvents.LaunchResult = getOrCreateRemoteEvent("LaunchResult")    -- サーバー→クライアント: 発射結果
-RemoteEvents.RainbowRainStart = getOrCreateRemoteEvent("RainbowRainStart")  -- グローバルイベント開始
-RemoteEvents.RainbowRainEnd = getOrCreateRemoteEvent("RainbowRainEnd")      -- グローバルイベント終了
-RemoteEvents.GlobalHeightUpdate = getOrCreateRemoteEvent("GlobalHeightUpdate")  -- サーバー全体の高度更新
 
 -- ブレインロットキャラクター関連イベント
 RemoteEvents.CharacterCollected = getOrCreateRemoteEvent("CharacterCollected")  -- キャラクター獲得通知
@@ -63,6 +56,4 @@ RemoteEvents.CharacterRemoved = getOrCreateRemoteEvent("CharacterRemoved")  -- �
 
 -- 関数定義
 RemoteEvents.GetPlayerData = getOrCreateRemoteFunction("GetPlayerData")
-RemoteEvents.GetGlobalStats = getOrCreateRemoteFunction("GetGlobalStats")  -- グローバル統計取得
-RemoteEvents.GetCharacterCollection = getOrCreateRemoteFunction("GetCharacterCollection")  -- キャラクターコレクション取得
 return RemoteEvents

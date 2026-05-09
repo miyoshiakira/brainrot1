@@ -18,8 +18,7 @@ export type ProfileData = {
     -- 通貨
     Money: number,
 
-    -- 高度（Brainrot Launch Simulator用）
-    Height: number,
+    -- 釣りパワー
     FishingPower: number,
 
     -- 装備
@@ -42,7 +41,6 @@ export type ProfileData = {
     TotalMoneyEarned: number,
     TotalPlayTime: number,
     SessionCount: number,
-    TotalLaunches: number,  -- 発射回数
     RainbowCharactersFound: number,  -- レインボーキャラ発見数
 }
 
@@ -50,8 +48,7 @@ local ProfileTemplate: ProfileData = {
     -- 通貨
     Money = 0,
 
-    -- 高度（Brainrot Launch Simulator用）
-    Height = 0,
+    -- 釣りパワー
     FishingPower = 1,
 
     -- 装備
@@ -74,7 +71,6 @@ local ProfileTemplate: ProfileData = {
     TotalMoneyEarned = 0,
     TotalPlayTime = 0,
     SessionCount = 0,
-    TotalLaunches = 0,
     RainbowCharactersFound = 0,
 }
 

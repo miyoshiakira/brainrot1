@@ -1,18 +1,13 @@
 --[[
-    Brainrot Launch Simulator クライアントスクリプト
-    - 所持金・高度UI表示
-    - クリティカル・ローンチUI（パワーゲージ）
-    - Rainbow Rainエフェクト
+    Brainrot クライアントスクリプト
+    - 所持金・釣りパワーUI表示
     - 通知表示
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local _UserInputService = game:GetService("UserInputService")
-local ContextActionService = game:GetService("ContextActionService")
-local ServerScriptService = game:GetService("ServerScriptService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -23,12 +18,11 @@ local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 print("=================================")
-print("Brainrot Launch Simulator クライアント起動")
+print("Brainrot クライアント起動")
 print("=================================")
 
--- 現在の所持金と高度
+-- 現在の所持金と釣りパワー
 local currentMoney = 0
-local currentHeight = 0
 local currentFishingPower = 0
 
 -- パステルカラー定義
@@ -43,26 +37,8 @@ local COLORS = {
     Dark = Color3.fromRGB(60, 60, 80),
     Perfect = Color3.fromRGB(255, 215, 0),
     Good = Color3.fromRGB(100, 255, 100),
-    Rainbow1 = Color3.fromRGB(255, 107, 107),
-    Rainbow2 = Color3.fromRGB(255, 217, 61),
-    Rainbow3 = Color3.fromRGB(107, 255, 107),
-    Rainbow4 = Color3.fromRGB(107, 107, 255),
 }
 
--- ゲージ状態
-local gaugeState = {
-    isActive = false,
-    position = 0,  -- 0-1の値
-    direction = 1, -- 1 = 右へ, -1 = 左へ
-    speed = 2.0,
-}
-
--- Rainbow Rain状態
-local rainbowRainActive = false
-
--- キャラクター収集状態
-local characterCollection = {}
-local activeMonsterId = nil
 
 -- レアリティカラー
 local RARITY_COLORS = {
@@ -166,123 +142,6 @@ local function createMainUI(): ScreenGui
     fishingPowerLabel.Parent = fishingPowerFrame
 
     -- ========================================
-    -- クリティカル・ローンチUI（パワーゲージ）
-    -- ========================================
-    local launchContainer = Instance.new("Frame")
-    launchContainer.Name = "LaunchContainer"
-    launchContainer.Size = UDim2.new(0, 400, 0, 180)
-    launchContainer.Position = UDim2.new(0.5, -200, 1, -200)
-    launchContainer.BackgroundColor3 = COLORS.Dark
-    launchContainer.BackgroundTransparency = 0.2
-    launchContainer.BorderSizePixel = 0
-    launchContainer.Visible = false
-    launchContainer.Parent = screenGui
-
-    local launchCorner = Instance.new("UICorner")
-    launchCorner.CornerRadius = UDim.new(0, 16)
-    launchCorner.Parent = launchContainer
-
-    -- タイトル
-    local launchTitle = Instance.new("TextLabel")
-    launchTitle.Name = "Title"
-    launchTitle.Size = UDim2.new(1, 0, 0, 30)
-    launchTitle.Position = UDim2.new(0, 0, 0, 10)
-    launchTitle.BackgroundTransparency = 1
-    launchTitle.TextColor3 = COLORS.Pink
-    launchTitle.Text = "🚀 LAUNCH POWER 🚀"
-    launchTitle.TextSize = 22
-    launchTitle.Font = Enum.Font.GothamBold
-    launchTitle.Parent = launchContainer
-
-    -- ゲージ背景
-    local gaugeBackground = Instance.new("Frame")
-    gaugeBackground.Name = "GaugeBackground"
-    gaugeBackground.Size = UDim2.new(0, 360, 0, 40)
-    gaugeBackground.Position = UDim2.new(0.5, -180, 0, 50)
-    gaugeBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    gaugeBackground.BorderSizePixel = 0
-    gaugeBackground.Parent = launchContainer
-
-    local gaugeCorner = Instance.new("UICorner")
-    gaugeCorner.CornerRadius = UDim.new(0, 8)
-    gaugeCorner.Parent = gaugeBackground
-
-    -- Perfect領域（中央 45%-55%）
-    local perfectZone = Instance.new("Frame")
-    perfectZone.Name = "PerfectZone"
-    perfectZone.Size = UDim2.new(0.1, 0, 1, 0)
-    perfectZone.Position = UDim2.new(0.45, 0, 0, 0)
-    perfectZone.BackgroundColor3 = COLORS.Perfect
-    perfectZone.BackgroundTransparency = 0.3
-    perfectZone.BorderSizePixel = 0
-    perfectZone.ZIndex = 2
-    perfectZone.Parent = gaugeBackground
-
-    -- Good領域（左 35%-45%）
-    local goodZoneLeft = Instance.new("Frame")
-    goodZoneLeft.Name = "GoodZoneLeft"
-    goodZoneLeft.Size = UDim2.new(0.1, 0, 1, 0)
-    goodZoneLeft.Position = UDim2.new(0.35, 0, 0, 0)
-    goodZoneLeft.BackgroundColor3 = COLORS.Good
-    goodZoneLeft.BackgroundTransparency = 0.5
-    goodZoneLeft.BorderSizePixel = 0
-    goodZoneLeft.ZIndex = 1
-    goodZoneLeft.Parent = gaugeBackground
-
-    -- Good領域（右 55%-65%）
-    local goodZoneRight = Instance.new("Frame")
-    goodZoneRight.Name = "GoodZoneRight"
-    goodZoneRight.Size = UDim2.new(0.1, 0, 1, 0)
-    goodZoneRight.Position = UDim2.new(0.55, 0, 0, 0)
-    goodZoneRight.BackgroundColor3 = COLORS.Good
-    goodZoneRight.BackgroundTransparency = 0.5
-    goodZoneRight.BorderSizePixel = 0
-    goodZoneRight.ZIndex = 1
-    goodZoneRight.Parent = gaugeBackground
-
-    -- ゲージインジケーター（動くバー）
-    local gaugeIndicator = Instance.new("Frame")
-    gaugeIndicator.Name = "GaugeIndicator"
-    gaugeIndicator.Size = UDim2.new(0, 8, 1, 4)
-    gaugeIndicator.Position = UDim2.new(0, -4, 0, -2)
-    gaugeIndicator.BackgroundColor3 = COLORS.White
-    gaugeIndicator.BorderSizePixel = 0
-    gaugeIndicator.ZIndex = 3
-    gaugeIndicator.Parent = gaugeBackground
-
-    local indicatorCorner = Instance.new("UICorner")
-    indicatorCorner.CornerRadius = UDim.new(0, 4)
-    indicatorCorner.Parent = gaugeIndicator
-
-    -- 発射ボタン
-    local launchButton = Instance.new("TextButton")
-    launchButton.Name = "LaunchButton"
-    launchButton.Size = UDim2.new(0, 200, 0, 50)
-    launchButton.Position = UDim2.new(0.5, -100, 0, 110)
-    launchButton.BackgroundColor3 = COLORS.Pink
-    launchButton.BorderSizePixel = 0
-    launchButton.Text = "🚀 LAUNCH! 🚀"
-    launchButton.TextColor3 = COLORS.White
-    launchButton.TextSize = 24
-    launchButton.Font = Enum.Font.GothamBold
-    launchButton.Parent = launchContainer
-
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 12)
-    buttonCorner.Parent = launchButton
-
-    -- 発射結果表示
-    local resultLabel = Instance.new("TextLabel")
-    resultLabel.Name = "ResultLabel"
-    resultLabel.Size = UDim2.new(1, 0, 0, 30)
-    resultLabel.Position = UDim2.new(0, 0, 0, 165)
-    resultLabel.BackgroundTransparency = 1
-    resultLabel.TextColor3 = COLORS.White
-    resultLabel.Text = ""
-    resultLabel.TextSize = 18
-    resultLabel.Font = Enum.Font.GothamBold
-    resultLabel.Parent = launchContainer
-
     -- 通知コンテナ
     local notificationContainer = Instance.new("Frame")
     notificationContainer.Name = "NotificationContainer"
@@ -295,17 +154,6 @@ local function createMainUI(): ScreenGui
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
     listLayout.Padding = UDim.new(0, 10)
     listLayout.Parent = notificationContainer
-
-    -- Rainbow Rainオーバーレイ
-    local rainbowOverlay = Instance.new("Frame")
-    rainbowOverlay.Name = "RainbowOverlay"
-    rainbowOverlay.Size = UDim2.new(1, 0, 1, 0)
-    rainbowOverlay.Position = UDim2.new(0, 0, 0, 0)
-    rainbowOverlay.BackgroundColor3 = COLORS.Rainbow1
-    rainbowOverlay.BackgroundTransparency = 1
-    rainbowOverlay.BorderSizePixel = 0
-    rainbowOverlay.ZIndex = 0
-    rainbowOverlay.Parent = screenGui
 
     -- ========================================
     -- キャラクター収集UI
@@ -418,21 +266,6 @@ local function formatNumber(num: number): string
     end
 end
 
--- 高度表示を更新
-local function updateHeightDisplay(newHeight: number)
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return end
-
-    local heightFrame = ui:FindFirstChild("TopBar"):FindFirstChild("HeightFrame")
-    if not heightFrame then return end
-
-    local label = heightFrame:FindFirstChild("HeightLabel")
-    if not label then return end
-
-    label.Text = formatNumber(newHeight) .. "m"
-    currentHeight = newHeight
-end
-
 -- コイン表示を更新
 local function updateCoinsDisplay(newMoney: number)
     local ui = playerGui:FindFirstChild("BrainrotUI")
@@ -479,57 +312,6 @@ local function updateFishingPowerDisplay(newFishingPower: number)
     currentFishingPower = newFishingPower
 end
 
--- グローバル高度を更新
-local function updateGlobalHeight(totalHeight: number)
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return end
-
-    local globalFrame = ui:FindFirstChild("TopBar"):FindFirstChild("GlobalFrame")
-    if not globalFrame then return end
-
-    local label = globalFrame:FindFirstChild("GlobalLabel")
-    if not label then return end
-
-    label.Text = "全体: " .. formatNumber(totalHeight) .. "m"
-end
-
--- 発射結果を表示
-local function showLaunchResult(result)
-    if not result then return end
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return end
-
-    local container = ui:FindFirstChild("LaunchContainer")
-    if not container then return end
-
-    local resultLabel = container:FindFirstChild("ResultLabel")
-    if not resultLabel then return end
-
-    local criticalColor = COLORS.White
-    if result.CriticalType == "PERFECT" then
-        criticalColor = COLORS.Perfect
-    elseif result.CriticalType == "GOOD" then
-        criticalColor = COLORS.Good
-    end
-
-    -- 特大ジャンプ演出
-    if result.IsMegaJump then
-        criticalColor = COLORS.Rainbow1
-    end
-
-    resultLabel.TextColor3 = criticalColor
-
-    -- 高度を更新
-    updateHeightDisplay(result.Height)
-
-    -- フェードアウト
-    task.delay(2, function()
-        print("result:", result)
-        if resultLabel.Text:find(result.CriticalType) then
-            resultLabel.Text = ""
-        end
-    end)
-end
 
 -- 通知を表示
 local function showNotification(title: string, message: string, color: Color3?)
@@ -596,157 +378,6 @@ local function showNotification(title: string, message: string, color: Color3?)
     end)
 end
 
--- ゲージを更新
-local function updateGauge(dt: number)
-    if not gaugeState.isActive then return end
-
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return end
-
-    local container = ui:FindFirstChild("LaunchContainer")
-    if not container then return end
-
-    local background = container:FindFirstChild("GaugeBackground")
-    if not background then return end
-
-    local indicator = background:FindFirstChild("GaugeIndicator")
-    if not indicator then return end
-
-    -- ゲージ位置を更新
-    gaugeState.position = gaugeState.position + (gaugeState.direction * gaugeState.speed * dt)
-
-    -- 端で反転
-    if gaugeState.position >= 1 then
-        gaugeState.position = 1
-        gaugeState.direction = -1
-    elseif gaugeState.position <= 0 then
-        gaugeState.position = 0
-        gaugeState.direction = 1
-    end
-
-    -- インジケーターの位置を更新
-    indicator.Position = UDim2.new(gaugeState.position, -4, 0, -2)
-end
-
--- 発射台に乗っているか
-local isOnJumpPad = false
-
--- 発射アクション（ContextActionServiceでプラットフォーム横断対応）
-local LAUNCH_ACTION_NAME = "LaunchAction"
-
--- 前方宣言
-local performLaunch
-local bindLaunchAction
-local unbindLaunchAction
-
-bindLaunchAction = function()
-    ContextActionService:BindAction(
-        LAUNCH_ACTION_NAME,
-        function(actionName, inputState, inputObject)
-            if inputState == Enum.UserInputState.Begin then
-                performLaunch()
-            end
-        end,
-        true, -- mobileタップボタン表示
-        Enum.KeyCode.Return,
-        Enum.KeyCode.ButtonA
-    )
-    ContextActionService:SetTitle(LAUNCH_ACTION_NAME, "🚀 LAUNCH")
-    ContextActionService:SetPosition(LAUNCH_ACTION_NAME, UDim2.new(0.5, -100, 1, -80))
-end
-
-unbindLaunchAction = function()
-    ContextActionService:UnbindAction(LAUNCH_ACTION_NAME)
-end
-
--- 発射処理
-performLaunch = function()
-    if not isOnJumpPad then return end
-
-    local character = player.Character
-    local humanoid = character:WaitForChild("Humanoid")
-    if not gaugeState.isActive then
-        -- ゲージを開始
-        gaugeState.isActive = true
-        gaugeState.position = 0
-        gaugeState.direction = 1
-
-        -- 高度に応じてスピードを計算
-        gaugeState.speed = 2.0 + (currentHeight * 0.0001)
-        gaugeState.speed = math.min(gaugeState.speed, 8.0)
-    else
-        -- 発射！
-        gaugeState.isActive = false
-        -- 物理的にプレイヤーを吹き飛ばす
-        local height = RemoteFunctions.LaunchRequest:InvokeServer(gaugeState.position)
-        print('物理プッシュ開始:' .. height)
-        if humanoid then
-            humanoid.WalkSpeed = 16
-            print('歩行速度を16に設定:' .. humanoid.WalkSpeed)
-        end
-        if character then
-            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart and humanoid then
-                print('物理プッシュ開始')
-                -- LocalScript内
-                local launchVelocity = math.sqrt(2 * workspace.Gravity * height)
-
-                -- サーバー側
-                -- 修正後（プロパティとして取得）
-                local mass = humanoidRootPart.AssemblyMass
-                humanoidRootPart:ApplyImpulse(Vector3.new(0, launchVelocity * mass, 0))
-                
-                print(string.format("[LaunchManager] 発射速度: %.1f studs/s (目標高度: %.1fm)", launchVelocity, height))
-            end
-        end
-
-        -- UI非表示 + 状態リセット（再度Eキーで起動可能に）
-        isOnJumpPad = false
-        unbindLaunchAction()
-        local ui = playerGui:FindFirstChild("BrainrotUI")
-        if ui then
-            local launchContainer = ui:FindFirstChild("LaunchContainer")
-            if launchContainer then
-                launchContainer.Visible = false
-            end
-        end
-    end
-end
-
--- Rainbow Rainエフェクト開始
-local function startRainbowRainEffect(data)
-    rainbowRainActive = true
-
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return end
-
-    local overlay = ui:FindFirstChild("RainbowOverlay")
-    if not overlay then return end
-
-    showNotification("🌈 RAINBOW RAIN! 🌈",
-        string.format("x%.1f ボーナス! %d秒間有効!", data.Multiplier, data.Duration),
-        COLORS.Rainbow1)
-
-    -- レインボーアニメーション
-    local colors = {COLORS.Rainbow1, COLORS.Rainbow2, COLORS.Rainbow3, COLORS.Rainbow4}
-    local colorIndex = 1
-
-    task.spawn(function()
-        while rainbowRainActive do
-            overlay.BackgroundTransparency = 0.85
-            overlay.BackgroundColor3 = colors[colorIndex]
-            colorIndex = (colorIndex % #colors) + 1
-            task.wait(0.5)
-        end
-        overlay.BackgroundTransparency = 1
-    end)
-end
-
--- Rainbow Rainエフェクト終了
-local function endRainbowRainEffect()
-    rainbowRainActive = false
-    showNotification("Rainbow Rain終了", "また協力して発動しよう!", COLORS.Lavender)
-end
 
 -- キャラクターパネルを表示/非表示
 local function toggleCharacterPanel()
@@ -757,136 +388,6 @@ local function toggleCharacterPanel()
     if not panel then return end
 
     panel.Visible = not panel.Visible
-end
-
--- キャラクターカードを作成
-local function createCharacterCard(parent, charData, isActive)
-    local card = Instance.new("Frame")
-    card.Name = charData.Id
-    card.BackgroundColor3 = RARITY_COLORS[charData.Rarity] or COLORS.White
-    card.BackgroundTransparency = isActive and 0.1 or 0.3
-    card.BorderSizePixel = isActive and 3 or 0
-    card.BorderColor3 = COLORS.Perfect
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = card
-
-    -- 絵文字
-    local emoji = Instance.new("TextLabel")
-    emoji.Size = UDim2.new(1, 0, 0, 50)
-    emoji.Position = UDim2.new(0, 0, 0, 5)
-    emoji.BackgroundTransparency = 1
-    emoji.Text = charData.Emoji or "❓"
-    emoji.TextSize = 36
-    emoji.Font = Enum.Font.GothamBold
-    emoji.Parent = card
-
-    -- 名前
-    local name = Instance.new("TextLabel")
-    name.Size = UDim2.new(1, 0, 0, 20)
-    name.Position = UDim2.new(0, 0, 0, 55)
-    name.BackgroundTransparency = 1
-    name.TextColor3 = COLORS.White
-    name.Text = charData.Name
-    name.TextSize = 10
-    name.Font = Enum.Font.GothamBold
-    name.TextTruncate = Enum.TextTruncate.AtEnd
-    name.Parent = card
-
-    -- レベル
-    local level = Instance.new("TextLabel")
-    level.Size = UDim2.new(1, 0, 0, 15)
-    level.Position = UDim2.new(0, 0, 0, 75)
-    level.BackgroundTransparency = 1
-    level.TextColor3 = COLORS.White
-    level.Text = "Lv." .. charData.Level
-    level.TextSize = 12
-    level.Font = Enum.Font.Gotham
-    level.Parent = card
-
-    -- ボーナス
-    local bonus = Instance.new("TextLabel")
-    bonus.Size = UDim2.new(1, 0, 0, 15)
-    bonus.Position = UDim2.new(0, 0, 0, 88)
-    bonus.BackgroundTransparency = 1
-    bonus.TextColor3 = COLORS.Good
-    bonus.Text = "+" .. charData.Bonus
-    bonus.TextSize = 11
-    bonus.Font = Enum.Font.Gotham
-    bonus.Parent = card
-
-    return card
-end
-
--- キャラクターリストを更新
-local function updateCharacterList()
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return end
-
-    local panel = ui:FindFirstChild("CharacterPanel")
-    if not panel then return end
-
-    local list = panel:FindFirstChild("CharacterList")
-    if not list then return end
-
-    -- 既存のカードを削除
-    for _, child in ipairs(list:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-
-    -- キャラクターデータを取得
-    local charModule = require(ReplicatedStorage.Shared.BrainrotMonsters)
-    local allChars = charModule.CHARACTERS
-
-    -- 各キャラクターのカードを作成
-    for _, charDef in ipairs(allChars) do
-        local charData = characterCollection[charDef.Id]
-        local isActive = activeMonsterId == charDef.Id
-
-        if charData then
-            -- 所持しているキャラクター
-            charData.Emoji = charDef.Emoji
-            createCharacterCard(list, charData, isActive)
-        else
-            -- 未所持キャラクター（シルエット表示）
-            local lockedCard = Instance.new("Frame")
-            lockedCard.Name = charDef.Id .. "_Locked"
-            lockedCard.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-            lockedCard.BackgroundTransparency = 0.5
-
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 8)
-            corner.Parent = lockedCard
-
-            local question = Instance.new("TextLabel")
-            question.Size = UDim2.new(1, 0, 1, 0)
-            question.BackgroundTransparency = 1
-            question.Text = "?"
-            question.TextColor3 = Color3.fromRGB(100, 100, 100)
-            question.TextSize = 36
-            question.Font = Enum.Font.GothamBold
-            question.Parent = lockedCard
-
-            lockedCard.Parent = list
-        end
-    end
-
-    -- 統計を更新
-    local stats = panel:FindFirstChild("StatsLabel")
-    if stats then
-        local totalCollected = 0
-        local rainbowCount = 0
-        for _, char in pairs(characterCollection) do
-            totalCollected = totalCollected + 1
-            if char.Rarity == "Rainbow" then
-                rainbowCount = rainbowCount + 1
-            end
-        end
-        stats.Text = string.format("収集数: %d | Rainbow: %d", totalCollected, rainbowCount)
-    end
 end
 
 -- キャラクター獲得通知
@@ -948,18 +449,9 @@ player.CharacterAdded:Connect(function(character)
     
 end)
 
--- ゲージ更新ループ
-RunService.Heartbeat:Connect(function(dt)
-    updateGauge(dt)
-end)
 
 -- ボタンイベント設定
 local ui = playerGui:WaitForChild("BrainrotUI")
-local launchButton = ui:WaitForChild("LaunchContainer"):WaitForChild("LaunchButton")
-
-launchButton.MouseButton1Click:Connect(function()
-    performLaunch()
-end)
 
 -- キャラクターボタン
 local characterButton = ui:WaitForChild("CharacterButton")
@@ -983,34 +475,8 @@ RemoteEvents.MoneyChanged.OnClientEvent:Connect(function(newMoney)
     updateCoinsDisplay(newMoney)
 end)
 
-RemoteEvents.HeightChanged.OnClientEvent:Connect(function(newHeight)
-    updateHeightDisplay(newHeight)
-end)
-
 RemoteEvents.FishingPowerChanged.OnClientEvent:Connect(function(newFishingPower)
     updateFishingPowerDisplay(newFishingPower)
-end)
-
-RemoteEvents.LaunchResult.OnClientEvent:Connect(function(result)
-    showLaunchResult(result)
-    -- 特大ジャンプ通知
-    if result.IsMegaJump then
-        showNotification("💥 MEGA JUMP!! 💥",
-            string.format("釣りパワーボーナス発動! +%d FishingPower", result.FishingPowerGain or 0),
-            COLORS.Rainbow1)
-    end
-end)
-
-RemoteEvents.GlobalHeightUpdate.OnClientEvent:Connect(function(totalHeight)
-    updateGlobalHeight(totalHeight)
-end)
-
-RemoteEvents.RainbowRainStart.OnClientEvent:Connect(function(data)
-    startRainbowRainEffect(data)
-end)
-
-RemoteEvents.RainbowRainEnd.OnClientEvent:Connect(function()
-    endRainbowRainEffect()
 end)
 
 RemoteEvents.NotifyPlayer.OnClientEvent:Connect(function(title, message)
@@ -1069,63 +535,14 @@ RemoteFunctions.TrashBoxAction.OnClientInvoke = function(player)
     return true
 end
 
--- 発射台アクション
-RemoteFunctions.JumpPadAction.OnClientInvoke = function(data)
-    local ui = playerGui:FindFirstChild("BrainrotUI")
-    if not ui then return nil end
-
-    local launchContainer = ui:FindFirstChild("LaunchContainer")
-    if not launchContainer then return nil end
-
-    -- 運搬中は発射不可
-    if isCarrying() then
-        showNotification("⚠️ 運搬中", "キャラクターを置いてから発射してください", COLORS.Yellow)
-        return false
-    end
-
-    -- 移動を復帰
-    local character = player.Character
-    local humanoid = character:FindFirstChild("Humanoid")
-
-    -- 表示/非表示を切り替え
-    if launchContainer.Visible then
-        launchContainer.Visible = false
-        isOnJumpPad = false
-        gaugeState.isActive = false
-        unbindLaunchAction()
-    else
-        launchContainer.Visible = true
-        isOnJumpPad = true
-        if humanoid then
-            humanoid.WalkSpeed = 0
-        end
-        bindLaunchAction()
-    end
-
-    return true
-end
-
 -- 初期データ取得
 task.spawn(function()
     task.wait(1)
     local data = RemoteEvents.GetPlayerData:InvokeServer()
     if data then
         updateCoinsDisplay(data.Money)
-        updateHeightDisplay(data.Height or 0)
         updateFishingPowerDisplay(data.FishingPower or 0)
-        showNotification("🚀 Brainrot Launch Simulator", "スペースキーまたはボタンで発射!", COLORS.Pink)
-    end
-
-    -- グローバル統計取得
-    local globalStats = RemoteEvents.GetGlobalStats:InvokeServer()
-    if globalStats then
-        updateGlobalHeight(globalStats.TotalHeight)
-        if globalStats.IsRainbowRain then
-            startRainbowRainEffect({
-                Duration = globalStats.RainbowRainTimeLeft,
-                Multiplier = 3.0
-            })
-        end
+        showNotification("🎣 Brainrot", "釣りを始めよう!", COLORS.Pink)
     end
 end)
 

@@ -8,7 +8,6 @@ repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 
 local DataManager = require(script.Parent.DataManager)
 local PlayerBaseController = require(script.Parent.PlayerBaseController)
--- LaunchManagerなどは既存のまま
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- 配置時の高さオフセット（浮いている場合はここを下げる）
 local Y_OFFSET = 5.0 -- 2.0から1.0に調整。モデルのPivot位置に合わせて微調整してください

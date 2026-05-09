@@ -1,9 +1,3 @@
---[[
-    Brainrot Launch Simulator サーバーメインスクリプト
-    - DataManager: プレイヤーデータ管理
-    - LaunchManager: 発射システム & グローバルイベント
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,8 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 
 local DataManager = require(script.Modules.DataManager)
-local LaunchModule = require(script.Modules.LaunchManager)
-local LaunchManager = LaunchModule.LaunchManager
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- CharacterController を読み込む
@@ -24,7 +16,7 @@ local ThrowAction = require(script.Modules.ThrowAction)
 
 print("CharacterController has been initialized.")
 print("=================================")
-print("Brainrot Launch Simulator サーバー起動")
+print("Brainrot サーバー起動")
 print("=================================")
 
 -- プレイヤーデータ取得（RemoteFunction）
@@ -34,7 +26,6 @@ RemoteEvents.GetPlayerData.OnServerInvoke = function(player)
         return {
             Money = profile.Money,
             FishingPower = profile.FishingPower,
-            Height = profile.Height,
             TotalCharactersCollected = profile.TotalCharactersCollected or 0,
             RainbowCharactersFound = profile.RainbowCharactersFound or 0,
         }
@@ -48,7 +39,6 @@ local moneyBox = CommonFunctions.findModelById(game.workspace, "MoneyBox")
 
 local CollectionService = game:GetService("CollectionService")
 local FishManager = require(script.Modules.FishManager)
-local ThrowAction = require(script.Modules.ThrowAction)
 local WhaleSharkEatLogic = require(script.Modules.WhaleSharkEatLogic)
 
 
@@ -73,14 +63,9 @@ Players.PlayerAdded:Connect(function(player)
     -- PlayerBaseをCloneして配置
     PlayerBaseController.SetupPlayerBase(player)
 
-    -- Leaderstatsを作成
-    LaunchManager.CreateLeaderstats(player)
-
     -- データ読み込み完了を待機
     local profile = DataManager.WaitForProfile(player)
     if profile then
-        -- Leaderstatsを更新
-        LaunchManager.UpdateLeaderstats(player)
 
         -- 保存済みのスロット配置を復元（プロファイル読み込み後であること）
         PlayerBaseController.RestoreSlots(player)
@@ -90,7 +75,6 @@ Players.PlayerAdded:Connect(function(player)
 
         -- 初期お金を通知
         RemoteEvents.MoneyChanged:FireClient(player, profile.Money)
-        RemoteEvents.HeightChanged:FireClient(player, profile.Height)
         RemoteEvents.FishingPowerChanged:FireClient(player, profile.FishingPower)
 
         -- 放置報酬があれば通知
@@ -127,8 +111,6 @@ DataManager.SpendMoney = function(player: Player, amount: number): boolean
     return result
 end
 
--- LaunchManagerを初期化
-LaunchManager.Initialize()
 -- 釣りシステムを初期化
 print("[Server] 釣りシステムを初期化")
 FishManager.Initialize()

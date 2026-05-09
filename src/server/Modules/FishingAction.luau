@@ -35,8 +35,7 @@ local function ProcessFishing(player, fishBox)
         return false
     end
 
-    -- レアリティ決定 (釣り用の特別確率にするか、Launchと同じにするか)
-    -- ここではLaunchと同じRollCharacterを使用
+    -- レアリティ決定
     local rarity = BrainrotMonsters.RollCharacter(false)
     if not rarity then return false end
 
@@ -61,7 +60,7 @@ local function ProcessFishing(player, fishBox)
     -- キャラクターをプレイヤーに持たせる
     MonsterManager.SpawnCharacterModel(player, selectedChar.MonsterId)
 
-    -- クライアントに獲得通知 (Launchと同じ)
+    -- クライアントに獲得通知
     RemoteEvents.CharacterCollected:FireClient(player, selectedChar.MonsterId)
 
     print(string.format("[FishingAction] %s が釣りで %s (%s) を獲得！", player.Name, selectedChar.MonsterId, rarity))

@@ -33,10 +33,8 @@ end
 RemoteFunctions.CharacterPlaceTry = getOrCreateRemoteFunction("CharacterPlaceTry")  -- キャラクターをスロットに配置
 RemoteFunctions.CharacterPickupTry = getOrCreateRemoteFunction("CharacterPickupTry")  -- キャラクターをスロットからひろうイベント
 RemoteFunctions.SlotActionTrigger = getOrCreateRemoteFunction("SlotActionTrigger")  -- キャラクターをスロットに配置のイベント
-RemoteFunctions.JumpPadAction = getOrCreateRemoteFunction("JumpPadAction")  -- 発射台アクション
 RemoteFunctions.UpgradeButtonActionTrigger = getOrCreateRemoteFunction("UpgradeButtonActionTrigger")  -- 強化ボタンアクション
 RemoteFunctions.TrashBoxAction = getOrCreateRemoteFunction("TrashBoxAction")
-RemoteFunctions.LaunchRequest = getOrCreateRemoteFunction("LaunchRequest")  -- クライアント→サーバー: ゲージ位置を送信、heightを返す
 RemoteFunctions.ThrowAction = getOrCreateRemoteFunction("ThrowAction")  -- クライアント→サーバー: キャラクターを投げる
 RemoteFunctions.PickUpAction = getOrCreateRemoteFunction("PickUpAction")  -- クライアント→サーバー: キャラクターをひろう
 return RemoteFunctions

@@ -35,21 +35,6 @@ local function setupSlot(slot)
     end)
 end
 
--- JumpPadの挙動を初期化する関数
-local function setupJumpPad(jumpPad)
-    local prompt = Instance.new("ProximityPrompt")
-    prompt.Parent = jumpPad
-    prompt.ObjectText = "発射台"
-    prompt.ActionText = "発射する"
-    prompt.Triggered:Connect(function(player)
-        -- クライアントにUI表示を依頼
-        print(string.format("JumpPad triggered by %s", player.Name))
-        local _success = RemoteFunctions.JumpPadAction:InvokeClient(player, {
-            JumpPad = jumpPad,
-        })
-    end)
-end
-
 -- MoneyBoxの挙動を初期化する関数
 local function setUpMoneyBoxAction(moneyBox)
     -- 既にProximityPromptがある場合は重複作成を防止
@@ -228,16 +213,6 @@ local function SetupPlayerBase(player: Player)
             slot.Name = "Slot" .. slotIndex .. "_" .. player.UserId
             slotIndex = slotIndex + 1
             setupSlot(slot)
-        end
-    end
-
-    -- JumpPad初期化
-    local launchPadAreaFolder = playerBase:FindFirstChild("LaunchPadArea")
-    if launchPadAreaFolder then
-        local launchPad = launchPadAreaFolder:FindFirstChild('LaunchPad')
-        if launchPad then
-            launchPad:SetAttribute("Owner", player.UserId)
-            setupJumpPad(launchPad)
         end
     end
 
