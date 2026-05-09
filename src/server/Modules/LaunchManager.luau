@@ -59,16 +59,16 @@ local LAUNCH_CONFIG = {
     PerfectDropBonus = 0.10,    -- Perfect時の追加ドロップ率（+10%）
     GoodDropBonus = 0.05,       -- Good時の追加ドロップ率（+5%）
 
-    -- 脚力（LegPower）
-    LegPowerGainNormal = 1,     -- NORMAL時の脚力獲得量
-    LegPowerGainGood = 3,       -- GOOD時の脚力獲得量
-    LegPowerGainPerfect = 8,    -- PERFECT時の脚力獲得量
-    LegPowerHeightBonus = 0.01, -- 脚力1あたりの高度ボーナス倍率（1%）
-    MegaJumpLegPowerThreshold = 50,  -- 特大ジャンプ発動に必要な脚力
+    -- 釣りパワー（FishingPower）
+    FishingPowerGainNormal = 1,     -- NORMAL時の釣りパワー獲得量
+    FishingPowerGainGood = 3,       -- GOOD時の釣りパワー獲得量
+    FishingPowerGainPerfect = 8,    -- PERFECT時の釣りパワー獲得量
+    FishingPowerHeightBonus = 0.01, -- 釣りパワー1あたりの高度ボーナス倍率（1%）
+    MegaJumpFishingPowerThreshold = 50,  -- 特大ジャンプ発動に必要な釣りパワー
     MegaJumpMultiplier = 2.0,   -- 特大ジャンプ時の追加倍率
 
-    -- レアリティ脚力ボーナス（キャラクタードロップ時）
-    RarityLegPowerBonus = {
+    -- レアリティ釣りパワーボーナス（キャラクタードロップ時）
+    RarityFishingPowerBonus = {
         Common = 0,
         Rare = 2,
         Epic = 5,
@@ -103,10 +103,10 @@ function LaunchManager.CreateLeaderstats(player: Player)
     coins.Value = 0
     coins.Parent = leaderstats
 
-    local legPower = Instance.new("IntValue")
-    legPower.Name = "LegPower"
-    legPower.Value = 0
-    legPower.Parent = leaderstats
+    local fishingPower = Instance.new("IntValue")
+    fishingPower.Name = "FishingPower"
+    fishingPower.Value = 0
+    fishingPower.Parent = leaderstats
 
     print("[LaunchManager] Leaderstats作成:", player.Name)
     return leaderstats
@@ -122,7 +122,7 @@ function LaunchManager.UpdateLeaderstats(player: Player)
 
     local heightValue = leaderstats:FindFirstChild("Height")
     local coinsValue = leaderstats:FindFirstChild("Coins")
-    local legPowerValue = leaderstats:FindFirstChild("LegPower")
+    local fishingPowerValue = leaderstats:FindFirstChild("FishingPower")
 
     if heightValue then
         heightValue.Value = math.floor(profile.Height)
@@ -132,8 +132,8 @@ function LaunchManager.UpdateLeaderstats(player: Player)
         coinsValue.Value = math.floor(profile.Money)
     end
 
-    if legPowerValue then
-        legPowerValue.Value = math.floor(profile.LegPower)
+    if fishingPowerValue then
+        fishingPowerValue.Value = math.floor(profile.FishingPower)
     end
 end
 
@@ -169,12 +169,12 @@ function LaunchManager.CalculateLaunchHeight(player: Player, gaugePosition: numb
         criticalMultiplier = criticalMultiplier * LAUNCH_CONFIG.RainbowRainMultiplier
     end
 
-    -- Height = CriticalMultiplier × LegPowerBonus
-    local legPowerBonus = 1 + (profile.LegPower * LAUNCH_CONFIG.LegPowerHeightBonus)
-    local height = criticalMultiplier * legPowerBonus * 10
+    -- Height = CriticalMultiplier × FishingPowerBonus
+    local fishingPowerBonus = 1 + (profile.FishingPower * LAUNCH_CONFIG.FishingPowerHeightBonus)
+    local height = criticalMultiplier * fishingPowerBonus * 10
 
-    -- 特大ジャンプ判定: 脚力が閾値以上 + PERFECT
-    local isMegaJump = profile.LegPower >= LAUNCH_CONFIG.MegaJumpLegPowerThreshold and criticalType == "PERFECT"
+    -- 特大ジャンプ判定: 釣りパワーが閾値以上 + PERFECT
+    local isMegaJump = profile.FishingPower >= LAUNCH_CONFIG.MegaJumpFishingPowerThreshold and criticalType == "PERFECT"
     if isMegaJump then
         height = height * LAUNCH_CONFIG.MegaJumpMultiplier
     end
@@ -255,12 +255,12 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): {su
     profile.Height = profile.Height + height
     profile.TotalLaunches = profile.TotalLaunches + 1
 
-    -- 脚力獲得
-    local legPowerGain = LAUNCH_CONFIG.LegPowerGainNormal
+    -- 釣りパワー獲得
+    local fishingPowerGain = LAUNCH_CONFIG.FishingPowerGainNormal
     if criticalType == "PERFECT" then
-        legPowerGain = LAUNCH_CONFIG.LegPowerGainPerfect
+        fishingPowerGain = LAUNCH_CONFIG.FishingPowerGainPerfect
     elseif criticalType == "GOOD" then
-        legPowerGain = LAUNCH_CONFIG.LegPowerGainGood
+        fishingPowerGain = LAUNCH_CONFIG.FishingPowerGainGood
     end
 
     -- コインを獲得
@@ -270,15 +270,15 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): {su
     -- キャラクタードロップ判定
     local droppedMonsterId = LaunchManager.TryCharacterDrop(player, criticalType)
 
-    -- ドロップしたキャラクターのレアリティに応じた脚力ボーナス
+    -- ドロップしたキャラクターのレアリティに応じた釣りパワーボーナス
     if droppedMonsterId then
         local droppedCharDef = BrainrotMonsters.GetCharacterById(droppedMonsterId)
         if droppedCharDef then
-            legPowerGain = legPowerGain + (LAUNCH_CONFIG.RarityLegPowerBonus[droppedCharDef.Rarity] or 0)
+            fishingPowerGain = fishingPowerGain + (LAUNCH_CONFIG.RarityFishingPowerBonus[droppedCharDef.Rarity] or 0)
         end
     end
 
-    profile.LegPower = profile.LegPower + legPowerGain
+    profile.FishingPower = profile.FishingPower + fishingPowerGain
 
     -- グローバル高度を更新
     GlobalState.TotalHeight = GlobalState.TotalHeight + height
@@ -286,8 +286,8 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): {su
     -- Leaderstatsを更新
     LaunchManager.UpdateLeaderstats(player)
 
-    -- 脚力変更を通知
-    RemoteEvents.LegPowerChanged:FireClient(player, profile.LegPower)
+    -- 釣りパワー変更を通知
+    RemoteEvents.FishingPowerChanged:FireClient(player, profile.FishingPower)
 
     -- クライアントに結果を送信
     RemoteEvents.LaunchResult:FireClient(player, {
@@ -297,7 +297,7 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): {su
         DroppedCharacter = droppedMonsterId,
         CriticalType = criticalType,
         IsMegaJump = isMegaJump,
-        LegPowerGain = legPowerGain,
+        FishingPowerGain = fishingPowerGain,
     })
 
     -- キャラクター獲得通知
@@ -311,8 +311,8 @@ function LaunchManager.ProcessLaunch(player: Player, gaugePosition: number): {su
     -- Rainbow Rain判定
     LaunchManager.CheckRainbowRain()
 
-    print(string.format("[LaunchManager] %s が発射: +%.0fm (%s x%.1f) 累計: %.0fm 脚力: %d%s",
-        player.Name, height, criticalType, multiplier, profile.Height, profile.LegPower,
+    print(string.format("[LaunchManager] %s が発射: +%.0fm (%s x%.1f) 累計: %.0fm 釣りパワー: %d%s",
+        player.Name, height, criticalType, multiplier, profile.Height, profile.FishingPower,
         isMegaJump and " MEGA JUMP!!" or ""))
 
     return {success = true, height = height}

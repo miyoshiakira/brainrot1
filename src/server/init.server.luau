@@ -33,7 +33,7 @@ RemoteEvents.GetPlayerData.OnServerInvoke = function(player)
     if profile then
         return {
             Money = profile.Money,
-            LegPower = profile.LegPower,
+            FishingPower = profile.FishingPower,
             Height = profile.Height,
             TotalCharactersCollected = profile.TotalCharactersCollected or 0,
             RainbowCharactersFound = profile.RainbowCharactersFound or 0,
@@ -82,7 +82,7 @@ Players.PlayerAdded:Connect(function(player)
         -- 初期お金を通知
         RemoteEvents.MoneyChanged:FireClient(player, profile.Money)
         RemoteEvents.HeightChanged:FireClient(player, profile.Height)
-        RemoteEvents.LegPowerChanged:FireClient(player, profile.LegPower)
+        RemoteEvents.FishingPowerChanged:FireClient(player, profile.FishingPower)
 
         -- 放置報酬があれば通知
         if profile.SessionCount > 1 then

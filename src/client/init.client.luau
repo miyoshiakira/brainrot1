@@ -29,7 +29,7 @@ print("=================================")
 -- 現在の所持金と高度
 local currentMoney = 0
 local currentHeight = 0
-local currentLegPower = 0
+local currentFishingPower = 0
 
 -- パステルカラー定義
 local COLORS = {
@@ -130,40 +130,40 @@ local function createMainUI(): ScreenGui
     coinsLabel.TextXAlignment = Enum.TextXAlignment.Left
     coinsLabel.Parent = coinsFrame
 
-    -- 脚力表示
-    local legPowerFrame = Instance.new("Frame")
-    legPowerFrame.Name = "LegPowerFrame"
-    legPowerFrame.Size = UDim2.new(1, -10, 0, 35)
-    legPowerFrame.Position = UDim2.new(0, 5, 0, 45)
-    legPowerFrame.BackgroundColor3 = COLORS.Mint
-    legPowerFrame.BackgroundTransparency = 0.2
-    legPowerFrame.BorderSizePixel = 0
-    legPowerFrame.Parent = topBar
+    -- 釣りパワー表示
+    local fishingPowerFrame = Instance.new("Frame")
+    fishingPowerFrame.Name = "FishingPowerFrame"
+    fishingPowerFrame.Size = UDim2.new(1, -10, 0, 35)
+    fishingPowerFrame.Position = UDim2.new(0, 5, 0, 45)
+    fishingPowerFrame.BackgroundColor3 = COLORS.Mint
+    fishingPowerFrame.BackgroundTransparency = 0.2
+    fishingPowerFrame.BorderSizePixel = 0
+    fishingPowerFrame.Parent = topBar
 
-    local legPowerCorner = Instance.new("UICorner")
-    legPowerCorner.CornerRadius = UDim.new(0, 8)
-    legPowerCorner.Parent = legPowerFrame
+    local fishingPowerCorner = Instance.new("UICorner")
+    fishingPowerCorner.CornerRadius = UDim.new(0, 8)
+    fishingPowerCorner.Parent = fishingPowerFrame
 
-    local legPowerIcon = Instance.new("TextLabel")
-    legPowerIcon.Name = "Icon"
-    legPowerIcon.Size = UDim2.new(0, 30, 1, 0)
-    legPowerIcon.Position = UDim2.new(0, 5, 0, 0)
-    legPowerIcon.BackgroundTransparency = 1
-    legPowerIcon.Text = "🦵"
-    legPowerIcon.TextSize = 20
-    legPowerIcon.Parent = legPowerFrame
+    local fishingPowerIcon = Instance.new("TextLabel")
+    fishingPowerIcon.Name = "Icon"
+    fishingPowerIcon.Size = UDim2.new(0, 30, 1, 0)
+    fishingPowerIcon.Position = UDim2.new(0, 5, 0, 0)
+    fishingPowerIcon.BackgroundTransparency = 1
+    fishingPowerIcon.Text = "🎣"
+    fishingPowerIcon.TextSize = 20
+    fishingPowerIcon.Parent = fishingPowerFrame
 
-    local legPowerLabel = Instance.new("TextLabel")
-    legPowerLabel.Name = "LegPowerLabel"
-    legPowerLabel.Size = UDim2.new(1, -40, 1, 0)
-    legPowerLabel.Position = UDim2.new(0, 35, 0, 0)
-    legPowerLabel.BackgroundTransparency = 1
-    legPowerLabel.TextColor3 = COLORS.Dark
-    legPowerLabel.Text = "0"
-    legPowerLabel.TextSize = 18
-    legPowerLabel.Font = Enum.Font.GothamBold
-    legPowerLabel.TextXAlignment = Enum.TextXAlignment.Left
-    legPowerLabel.Parent = legPowerFrame
+    local fishingPowerLabel = Instance.new("TextLabel")
+    fishingPowerLabel.Name = "FishingPowerLabel"
+    fishingPowerLabel.Size = UDim2.new(1, -40, 1, 0)
+    fishingPowerLabel.Position = UDim2.new(0, 35, 0, 0)
+    fishingPowerLabel.BackgroundTransparency = 1
+    fishingPowerLabel.TextColor3 = COLORS.Dark
+    fishingPowerLabel.Text = "0"
+    fishingPowerLabel.TextSize = 18
+    fishingPowerLabel.Font = Enum.Font.GothamBold
+    fishingPowerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    fishingPowerLabel.Parent = fishingPowerFrame
 
     -- ========================================
     -- クリティカル・ローンチUI（パワーゲージ）
@@ -456,27 +456,27 @@ local function updateCoinsDisplay(newMoney: number)
     currentMoney = newMoney
 end
 
--- 脚力表示を更新
-local function updateLegPowerDisplay(newLegPower: number)
+-- 釣りパワー表示を更新
+local function updateFishingPowerDisplay(newFishingPower: number)
     local ui = playerGui:FindFirstChild("BrainrotUI")
     if not ui then return end
 
-    local legPowerFrame = ui:FindFirstChild("TopBar"):FindFirstChild("LegPowerFrame")
-    if not legPowerFrame then return end
+    local fishingPowerFrame = ui:FindFirstChild("TopBar"):FindFirstChild("FishingPowerFrame")
+    if not fishingPowerFrame then return end
 
-    local label = legPowerFrame:FindFirstChild("LegPowerLabel")
+    local label = fishingPowerFrame:FindFirstChild("FishingPowerLabel")
     if not label then return end
 
     -- アニメーション
-    if newLegPower > currentLegPower then
+    if newFishingPower > currentFishingPower then
         label.TextColor3 = COLORS.Perfect
         task.delay(0.5, function()
             label.TextColor3 = COLORS.Dark
         end)
     end
 
-    label.Text = formatNumber(newLegPower)
-    currentLegPower = newLegPower
+    label.Text = formatNumber(newFishingPower)
+    currentFishingPower = newFishingPower
 end
 
 -- グローバル高度を更新
@@ -987,8 +987,8 @@ RemoteEvents.HeightChanged.OnClientEvent:Connect(function(newHeight)
     updateHeightDisplay(newHeight)
 end)
 
-RemoteEvents.LegPowerChanged.OnClientEvent:Connect(function(newLegPower)
-    updateLegPowerDisplay(newLegPower)
+RemoteEvents.FishingPowerChanged.OnClientEvent:Connect(function(newFishingPower)
+    updateFishingPowerDisplay(newFishingPower)
 end)
 
 RemoteEvents.LaunchResult.OnClientEvent:Connect(function(result)
@@ -996,7 +996,7 @@ RemoteEvents.LaunchResult.OnClientEvent:Connect(function(result)
     -- 特大ジャンプ通知
     if result.IsMegaJump then
         showNotification("💥 MEGA JUMP!! 💥",
-            string.format("脚力ボーナス発動! +%d LegPower", result.LegPowerGain or 0),
+            string.format("釣りパワーボーナス発動! +%d FishingPower", result.FishingPowerGain or 0),
             COLORS.Rainbow1)
     end
 end)
@@ -1112,7 +1112,7 @@ task.spawn(function()
     if data then
         updateCoinsDisplay(data.Money)
         updateHeightDisplay(data.Height or 0)
-        updateLegPowerDisplay(data.LegPower or 0)
+        updateFishingPowerDisplay(data.FishingPower or 0)
         showNotification("🚀 Brainrot Launch Simulator", "スペースキーまたはボタンで発射!", COLORS.Pink)
     end
 

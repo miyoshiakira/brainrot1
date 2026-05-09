@@ -49,7 +49,7 @@ RemoteEvents.NotifyPlayer = getOrCreateRemoteEvent("NotifyPlayer")
 
 -- Brainrot Launch Simulator用イベント
 RemoteEvents.HeightChanged = getOrCreateRemoteEvent("HeightChanged")
-RemoteEvents.LegPowerChanged = getOrCreateRemoteEvent("LegPowerChanged")
+RemoteEvents.FishingPowerChanged = getOrCreateRemoteEvent("FishingPowerChanged")
 RemoteEvents.LaunchResult = getOrCreateRemoteEvent("LaunchResult")    -- サーバー→クライアント: 発射結果
 RemoteEvents.RainbowRainStart = getOrCreateRemoteEvent("RainbowRainStart")  -- グローバルイベント開始
 RemoteEvents.RainbowRainEnd = getOrCreateRemoteEvent("RainbowRainEnd")      -- グローバルイベント終了
