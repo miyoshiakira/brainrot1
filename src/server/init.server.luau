@@ -7,6 +7,7 @@ repeat task.wait() until ReplicatedStorage:FindFirstChild("Shared")
 local DataManager = require(script.Modules.DataManager)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
+local AreaMaster = require(ReplicatedStorage.Shared.AreaMaster)
 -- CharacterController を読み込む
 -- これにより、CharacterController.luau 内の OnServerInvoke が登録される
 local _CharacterController = require(script.Modules.CharacterController)
@@ -58,7 +59,7 @@ end)
 
 -- プレイヤー入室処理
 Players.PlayerAdded:Connect(function(player)
-    print("[Server] プレイヤー入室:", player.Name)
+    print(string.format("[Server] プレイヤー入室: %s (UserId: %d)", player.Name, player.UserId))
 
     -- PlayerBaseをCloneして配置
     PlayerBaseController.SetupPlayerBase(player)
@@ -108,20 +109,8 @@ RemoteEvents.AreaUnlocked.OnServerEvent:Connect(function(player, areaName)
         return
     end
 
-    -- コスト検索
-    local AREA_OPEN_COSTS = {
-        {AreaName = "草原", cost = 10000},
-        {AreaName = "沼地", cost = 50000},
-        {AreaName = "市街地", cost = 200000},
-        {AreaName = "洞窟", cost = 1000000},
-    }
-    local cost = nil
-    for _, entry in ipairs(AREA_OPEN_COSTS) do
-        if entry.AreaName == areaName then
-            cost = entry.cost
-            break
-        end
-    end
+    -- コスト検索（共通マスタから取得）
+    local cost = AreaMaster.GetCost(areaName)
     if not cost then
         RemoteEvents.NotifyPlayer:FireClient(player, "⚠️ エラー", "不明なエリアです")
         return

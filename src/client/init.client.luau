@@ -25,6 +25,8 @@ print("=================================")
 local currentMoney = 0
 local currentFishingPower = 0
 local currentRodRank = 1
+local lastFishPosition: Vector3? = nil
+local _warpNotify: (string) -> () = function(_msg) end  -- forward ref, set after showNotification defined
 
 -- パステルカラー定義
 local COLORS = {
@@ -178,6 +180,99 @@ local function createMainUI(): ScreenGui
     rodRankLabel.Parent = rodRankFrame
 
     -- ========================================
+    -- ワープボタン（左上に配置）
+    -- ========================================
+    local warpPanel = Instance.new("Frame")
+    warpPanel.Name = "WarpPanel"
+    warpPanel.Size = UDim2.new(0, 140, 0, 90)
+    warpPanel.Position = UDim2.new(0, 10, 0, 10)
+    warpPanel.BackgroundTransparency = 1
+    warpPanel.Parent = screenGui
+
+    local warpLayout = Instance.new("UIListLayout")
+    warpLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    warpLayout.Padding = UDim.new(0, 8)
+    warpLayout.Parent = warpPanel
+
+    -- 拠点へワープボタン
+    local warpBaseBtn = Instance.new("TextButton")
+    warpBaseBtn.Name = "WarpBaseButton"
+    warpBaseBtn.Size = UDim2.new(1, 0, 0, 38)
+    warpBaseBtn.BackgroundColor3 = COLORS.Lavender
+    warpBaseBtn.BackgroundTransparency = 0.2
+    warpBaseBtn.BorderSizePixel = 0
+    warpBaseBtn.Text = "🏠 拠点へ"
+    warpBaseBtn.TextColor3 = COLORS.Dark
+    warpBaseBtn.TextSize = 16
+    warpBaseBtn.Font = Enum.Font.GothamBold
+    warpBaseBtn.LayoutOrder = 1
+    warpBaseBtn.Parent = warpPanel
+
+    local warpBaseCorner = Instance.new("UICorner")
+    warpBaseCorner.CornerRadius = UDim.new(0, 8)
+    warpBaseCorner.Parent = warpBaseBtn
+
+    -- 釣り場へワープボタン
+    local warpFishBtn = Instance.new("TextButton")
+    warpFishBtn.Name = "WarpFishButton"
+    warpFishBtn.Size = UDim2.new(1, 0, 0, 38)
+    warpFishBtn.BackgroundColor3 = COLORS.Sky
+    warpFishBtn.BackgroundTransparency = 0.2
+    warpFishBtn.BorderSizePixel = 0
+    warpFishBtn.Text = "🎣 釣り場へ"
+    warpFishBtn.TextColor3 = COLORS.Dark
+    warpFishBtn.TextSize = 16
+    warpFishBtn.Font = Enum.Font.GothamBold
+    warpFishBtn.LayoutOrder = 2
+    warpFishBtn.Parent = warpPanel
+
+    local warpFishCorner = Instance.new("UICorner")
+    warpFishCorner.CornerRadius = UDim.new(0, 8)
+    warpFishCorner.Parent = warpFishBtn
+
+    -- 拠点ワープ処理
+    warpBaseBtn.MouseButton1Click:Connect(function()
+        local character = player.Character
+        if not character then return end
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+
+        -- PlayerBaseのPrimaryPartを検索
+        local playerBase = game.Workspace:FindFirstChild("PlayerBase_" .. player.UserId)
+        if not playerBase then
+            _warpNotify("拠点が見つかりません")
+            return
+        end
+        local primaryPart = playerBase.PrimaryPart
+        if not primaryPart then
+            primaryPart = playerBase:FindFirstChildWhichIsA("BasePart")
+        end
+        if not primaryPart then
+            _warpNotify("拠点の位置が不明です")
+            return
+        end
+
+        humanoidRootPart.CFrame = CFrame.new(primaryPart.Position + Vector3.new(0, 3, 0))
+        _warpNotify("拠点に帰還しました！")
+    end)
+
+    -- 釣り場ワープ処理
+    warpFishBtn.MouseButton1Click:Connect(function()
+        local character = player.Character
+        if not character then return end
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+
+        if not lastFishPosition then
+            _warpNotify("まだ釣り場が登録されていません")
+            return
+        end
+
+        humanoidRootPart.CFrame = CFrame.new(lastFishPosition)
+        _warpNotify("釣り場にワープしました！")
+    end)
+
+    -- ========================================
     -- 通知コンテナ
     local notificationContainer = Instance.new("Frame")
     notificationContainer.Name = "NotificationContainer"
@@ -192,12 +287,13 @@ local function createMainUI(): ScreenGui
     listLayout.Parent = notificationContainer
 
     -- ========================================
-    -- キャラクター収集UI
+    -- キャラクター収集UI（一時無効化）
     -- ========================================
+    --[[
     local characterButton = Instance.new("TextButton")
     characterButton.Name = "CharacterButton"
     characterButton.Size = UDim2.new(0, 60, 0, 60)
-    characterButton.Position = UDim2.new(0, 20, 0.5, -30)
+    characterButton.Position = UDim2.new(0.5, -30, 0, 10)
     characterButton.BackgroundColor3 = COLORS.Lavender
     characterButton.BorderSizePixel = 0
     characterButton.Text = "🎁"
@@ -285,6 +381,7 @@ local function createMainUI(): ScreenGui
     statsLabel.TextSize = 16
     statsLabel.Font = Enum.Font.Gotham
     statsLabel.Parent = characterPanel
+    --]]
 
     return screenGui
 end
@@ -438,7 +535,8 @@ local function showNotification(title: string, message: string, color: Color3?)
 end
 
 
--- キャラクターパネルを表示/非表示
+-- キャラクターパネルを表示/非表示（一時無効化）
+--[[
 local function toggleCharacterPanel()
     local ui = playerGui:FindFirstChild("BrainrotUI")
     if not ui then return end
@@ -448,6 +546,7 @@ local function toggleCharacterPanel()
 
     panel.Visible = not panel.Visible
 end
+--]]
 
 -- キャラクター獲得通知
 local function showCharacterCollected(charData)
@@ -503,6 +602,9 @@ end
 -- UI初期化
 createMainUI()
 
+-- ワープ通知の前方参照を設定
+_warpNotify = function(msg) showNotification("🏠 ワープ", msg) end
+
 -- プレイヤー死亡時に運搬状態をリセット
 player.CharacterAdded:Connect(function(character)
     
@@ -510,9 +612,10 @@ end)
 
 
 -- ボタンイベント設定
-local ui = playerGui:WaitForChild("BrainrotUI")
+local _ui = playerGui:WaitForChild("BrainrotUI")
 
--- キャラクターボタン
+-- キャラクターボタン（一時無効化）
+--[[
 local characterButton = ui:WaitForChild("CharacterButton")
 characterButton.MouseButton1Click:Connect(function()
     toggleCharacterPanel()
@@ -528,6 +631,7 @@ if characterPanel then
         end)
     end
 end
+--]]
 
 -- サーバーイベント受信
 RemoteEvents.MoneyChanged.OnClientEvent:Connect(function(newMoney)
@@ -572,6 +676,11 @@ end)
 
 RemoteEvents.NotifyPlayer.OnClientEvent:Connect(function(title, message)
     showNotification(title, message)
+end)
+
+-- 釣り場位置受信
+RemoteEvents.LastFishPosition.OnClientEvent:Connect(function(position: Vector3)
+    lastFishPosition = position
 end)
 
 -- キャラクター関連イベント

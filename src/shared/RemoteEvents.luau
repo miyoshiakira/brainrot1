@@ -50,6 +50,7 @@ RemoteEvents.FishingPowerChanged = getOrCreateRemoteEvent("FishingPowerChanged")
 RemoteEvents.RodRankChanged = getOrCreateRemoteEvent("RodRankChanged")
 RemoteEvents.AreaUnlockRequest = getOrCreateRemoteEvent("AreaUnlockRequest")
 RemoteEvents.AreaUnlocked = getOrCreateRemoteEvent("AreaUnlocked")
+RemoteEvents.LastFishPosition = getOrCreateRemoteEvent("LastFishPosition")  -- 釣り場位置通知
 
 -- ブレインロットキャラクター関連イベント
 RemoteEvents.CharacterCollected = getOrCreateRemoteEvent("CharacterCollected")  -- キャラクター獲得通知

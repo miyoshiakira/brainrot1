@@ -8,6 +8,7 @@ local DataManager = require(script.Parent.DataManager)
 local MonsterManager = require(script.Parent.MonsterManager)
 local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+local AreaMaster = require(ReplicatedStorage.Shared.AreaMaster)
 local constants = require("../Constants")
 
 -- スロットの挙動を初期化する関数
@@ -86,21 +87,9 @@ local ROD_UPGRADE_COSTS = {
 }
 
 -- エリア解放の挙動を初期化する関数
-local AREA_OPEN_COSTS = {
-    {AreaName = "草原", cost = 10000},
-    {AreaName = "沼地", cost = 50000},
-    {AreaName = "市街地", cost = 200000},
-    {AreaName = "洞窟", cost = 1000000},
-}
-
 -- AreaBlockタグからエリア名に対応するコストを検索
 local function getAreaCost(areaName: string): number?
-    for _, entry in ipairs(AREA_OPEN_COSTS) do
-        if entry.AreaName == areaName then
-            return entry.cost
-        end
-    end
-    return nil
+    return AreaMaster.GetCost(areaName)
 end
 
 -- AreaBlockにProximityPromptを設定
