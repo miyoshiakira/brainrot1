@@ -9,13 +9,19 @@ local RARITY_CONFIG = {
     Common = {
         Name = "Common",
         Color = Color3.fromRGB(150, 150, 150),
-        DropRate = 0.60,
+        DropRate = 0.40,
         BonusRange = {5, 15},
+    },
+    UnCommon = {
+        Name = "UnCommon",
+        Color = Color3.fromRGB(100, 200, 100),
+        DropRate = 0.25,
+        BonusRange = {10, 20},
     },
     Rare = {
         Name = "Rare",
         Color = Color3.fromRGB(0, 150, 255),
-        DropRate = 0.25,
+        DropRate = 0.20,
         BonusRange = {15, 30},
     },
     Epic = {
@@ -38,34 +44,25 @@ local RARITY_CONFIG = {
     },
 }
 
--- キャラクター定義
+-- キャラクター定義（Rarityは釣り時に確率で決定されるため、定義には含めない）
 local CHARACTERS = {
-    -- 【Common】基本のネタ（手に入りやすいが、全ての始まり）
-    {MonsterId = "Tamago_Chan", MonsterName = "たまごちゃん", ModelName = "TamagoChan", Rarity = "Common", Money = 1.0, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Aji_Chan", MonsterName = "あじちゃん", ModelName = "AjiChan", Rarity = "Common", Money = 1.2, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Ika_Chan", MonsterName = "いかちゃん", ModelName = "IkaChan", Rarity = "Common", Money = 1.1, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Inari_Chan", MonsterName = "いなりちゃん", ModelName = "InariChan", Rarity = "Common", Money = 1.3, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Rare】少し豪華なネタ（ここから収益に差が出始める）
-    {MonsterId = "Hokkigai_Chan", MonsterName = "ほっきちゃん", ModelName = "HokkigaiChan", Rarity = "Rare", Money = 2.9, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Amaebi_Chan", MonsterName = "甘エビちゃん", ModelName = "AmaebiChan", Rarity = "Rare", Money = 2.5, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Salmon_Chan", MonsterName = "サーモンちゃん", ModelName = "SalmonChan", Rarity = "Rare", Money = 3.0, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Hotate_Chan", MonsterName = "ほたてちゃん", ModelName = "HotateChan", Rarity = "Rare", Money = 2.8, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Tsubugai_Chan", MonsterName = "つぶがいちゃん", ModelName = "TsubugaiChan", Rarity = "Rare", Money = 2.7, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Rare】色彩豊かな職人技（装飾はないが、色のコントラストが美しい）
-    {MonsterId = "Cobalt_Saba", MonsterName = "コバルトしめさば君", ModelName = "CobaltSabaChan", Rarity = "Rare", Money = 5.0, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Epic】高級ネタ（エフェクトが似合うランク）
-    {MonsterId = "Ikura_Chan", MonsterName = "いくらちゃん", ModelName = "IkuraChan", Rarity = "Epic", Money = 7.5, PowerFrom = 0, PowerTo = math.huge},
-    {MonsterId = "Sushi_Chan", MonsterName = "マグロ先輩", ModelName = "SushiChan", Rarity = "Epic", Money = 10.0, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Epic】透明感と色彩の調和（シンプルだが高貴な存在）
-    {MonsterId = "Crystal_Kajiki", MonsterName = "クリスタルかじき様", ModelName = "CrystalKajikiChan", Rarity = "Epic", Money = 12.0, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Epic】深い味わいと色味（シンプルだが職人のこだわりを感じる一品）
-    {MonsterId = "Golden_Anago", MonsterName = "黄金あなご伯爵", ModelName = "AnagoHakushaku", Rarity = "Epic", Money = 9.0, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Epic】高級ネタ（見た目が華やかで収益も高い）
-    {MonsterId = "Negitoro_Pink", MonsterName = "ねぎとろぴんく", ModelName = "NegitoroChan", Rarity = "Epic", Money = 8.8, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Legendary】至高のネタ（なかなか出ない、プレイヤーの憧れ）
-    {MonsterId = "Uni_Chan", MonsterName = "うに殿下", ModelName = "UniChan", Rarity = "Legendary", Money = 25.0, PowerFrom = 0, PowerTo = math.huge},
-    -- 【Rainbow】幻のネタ（全身が輝く最強の寿司）
-    {MonsterId = "Otoro_King", MonsterName = "大トロキング", ModelName = "SushiChan", Rarity = "Rainbow", Money = 100.0, PowerFrom = 0, PowerTo = math.huge},
+    {MonsterId = "Tamago_Chan", MonsterName = "たまごちゃん", ModelName = "TamagoChan", Money = 1.0, Biome="river"},
+    {MonsterId = "Aji_Chan", MonsterName = "あじちゃん", ModelName = "AjiChan", Money = 1.2, Biome="river"},
+    {MonsterId = "Ika_Chan", MonsterName = "いかちゃん", ModelName = "IkaChan", Money = 1.1, Biome="river"},
+    {MonsterId = "Inari_Chan", MonsterName = "いなりちゃん", ModelName = "InariChan", Money = 1.3, Biome="river"},
+    {MonsterId = "Amaebi_Chan", MonsterName = "甘エビちゃん", ModelName = "AmaebiChan", Money = 2.5, Biome="glass"},
+    {MonsterId = "Tsubugai_Chan", MonsterName = "つぶがいちゃん", ModelName = "TsubugaiChan", Money = 2.7, Biome="glass"},
+    {MonsterId = "Hotate_Chan", MonsterName = "ほたてちゃん", ModelName = "HotateChan", Money = 2.8, Biome="glass"},
+    {MonsterId = "Hokkigai_Chan", MonsterName = "ほっきちゃん", ModelName = "HokkigaiChan", Money = 2.9, Biome="glass"},
+    {MonsterId = "Salmon_Chan", MonsterName = "サーモンちゃん", ModelName = "SalmonChan", Money = 3.0, Biome="glass"},
+    {MonsterId = "Cobalt_Saba", MonsterName = "コバルトしめさば君", ModelName = "CobaltSabaChan", Money = 5.0, Biome="mud"},
+    {MonsterId = "Ikura_Chan", MonsterName = "いくらちゃん", ModelName = "IkuraChan", Money = 7.5, Biome="mud"},
+    {MonsterId = "Negitoro_Pink", MonsterName = "ねぎとろぴんく", ModelName = "NegitoroChan", Money = 8.8, Biome="mud"},
+    {MonsterId = "Golden_Anago", MonsterName = "黄金あなご伯爵", ModelName = "AnagoHakushaku", Money = 9.0, Biome="mud"},
+    {MonsterId = "Sushi_Chan", MonsterName = "マグロ先輩", ModelName = "SushiChan", Money = 10.0, Biome="city"},
+    {MonsterId = "Crystal_Kajiki", MonsterName = "クリスタルかじき様", ModelName = "CrystalKajikiChan", Money = 12.0, Biome="city"},
+    {MonsterId = "Uni_Chan", MonsterName = "うに殿下", ModelName = "UniChan", Money = 25.0, Biome="city"},
+    {MonsterId = "Otoro_King", MonsterName = "大トロキング", ModelName = "SushiChan", Money = 100.0, Biome="city"},
 }
 
 -- ユーティリティ関数
@@ -88,49 +85,108 @@ function BrainrotMonsters.GetCharacterById(id)
     return nil
 end
 
-function BrainrotMonsters.GetCharactersByRarity(rarity, fishingPower)
+-- Biomeに基づいて釣り可能なキャラクターを取得
+function BrainrotMonsters.GetAvailableCharacters(biome)
     local result = {}
-    local p = fishingPower or 0
     for _, char in ipairs(CHARACTERS) do
-        if char.Rarity == rarity then
-            local from = char.PowerFrom or 0
-            local to = char.PowerTo or math.huge
-            if p >= from and p <= to then
-                table.insert(result, char)
-            end
+        local biomeMatch = (not biome) or (char.Biome == biome)
+        if biomeMatch then
+            table.insert(result, char)
         end
     end
     return result
 end
 
-function BrainrotMonsters.RollCharacter(isRainbowRain)
-    local roll = math.random()
+-- レアリティ確率ボーナス計算
+-- FishingPowerと釣り竿ランクに応じて高レアリティの確率を加算
+-- bonusRateは0～1の範囲で、高レアリティのDropRateに加算される
+local function calcRarityBonus(fishingPower: number, rodRank: number): number
+    -- FishingPower: 100ごとに+0.01 (最大0.15)
+    local powerBonus = math.min(fishingPower / 10000, 0.15)
+    -- 釣り竿ランク: ランク1=0, ランク2=0.02, ランク3=0.04, ランク4=0.07, ランク5=0.10
+    local rodBonusTable = {0, 0.02, 0.04, 0.07, 0.10}
+    local rodBonus = rodBonusTable[rodRank] or 0.10
+    return powerBonus + rodBonus
+end
 
+-- 釣り抽選: モンスターをBiomeで絞ってランダム選択 → レアリティを確率で抽選
+-- 戻り値: char, rarity (2つの値を返す)
+function BrainrotMonsters.RollFromAvailablePool(isRainbowRain, biome, fishingPower, rodRank)
+    local pool = BrainrotMonsters.GetAvailableCharacters(biome)
+    if #pool == 0 then return nil, nil end
+
+    -- 1. モンスターを均等抽選
+    local selectedChar = pool[math.random(1, #pool)]
+
+    -- 2. レアリティを確率で抽選（FishingPower・釣り竿ランクでボーナス加算）
+    local rarity = BrainrotMonsters.RollCharacter(isRainbowRain, fishingPower or 0, rodRank or 1)
+
+    return selectedChar, rarity
+end
+
+function BrainrotMonsters.RollCharacter(isRainbowRain, fishingPower, rodRank)
+    local bonus = calcRarityBonus(fishingPower or 0, rodRank or 1)
+
+    -- ボーナスを各レアリティの確率に加算（Commonから減らして高レアリティに分配）
+    local rates = {
+        Rainbow    = RARITY_CONFIG.Rainbow.DropRate + bonus * 0.1,
+        Legendary  = RARITY_CONFIG.Legendary.DropRate + bonus * 0.15,
+        Epic       = RARITY_CONFIG.Epic.DropRate + bonus * 0.25,
+        Rare       = RARITY_CONFIG.Rare.DropRate + bonus * 0.25,
+        UnCommon   = RARITY_CONFIG.UnCommon.DropRate + bonus * 0.15,
+        Common     = 1.0, -- 残り全て
+    }
+    -- Commonは残りを計算
+    rates.Common = 1.0 - (rates.Rainbow + rates.Legendary + rates.Epic + rates.Rare + rates.UnCommon)
+    if rates.Common < 0.1 then
+        rates.Common = 0.1 -- Common最低保障
+    end
+
+    -- レインボーレイン時は別テーブル
     if isRainbowRain then
-        if roll < 0.10 then
-            return "Rainbow"
-        elseif roll < 0.30 then
-            return "Legendary"
-        elseif roll < 0.60 then
-            return "Epic"
-        elseif roll < 0.85 then
-            return "Rare"
-        else
-            return "Common"
-        end
-    else
-        if roll < RARITY_CONFIG.Rainbow.DropRate then
-            return "Rainbow"
-        elseif roll < RARITY_CONFIG.Rainbow.DropRate + RARITY_CONFIG.Legendary.DropRate then
-            return "Legendary"
-        elseif roll < RARITY_CONFIG.Rainbow.DropRate + RARITY_CONFIG.Legendary.DropRate + RARITY_CONFIG.Epic.DropRate then
-            return "Epic"
-        elseif roll < RARITY_CONFIG.Rainbow.DropRate + RARITY_CONFIG.Legendary.DropRate + RARITY_CONFIG.Epic.DropRate + RARITY_CONFIG.Rare.DropRate then
-            return "Rare"
-        else
-            return "Common"
+        rates = {
+            Rainbow   = 0.10 + bonus * 0.1,
+            Legendary = 0.20 + bonus * 0.15,
+            Epic      = 0.25 + bonus * 0.25,
+            Rare      = 0.20 + bonus * 0.25,
+            UnCommon  = 0.15 + bonus * 0.15,
+            Common    = 1.0,
+        }
+        rates.Common = 1.0 - (rates.Rainbow + rates.Legendary + rates.Epic + rates.Rare + rates.UnCommon)
+        if rates.Common < 0.05 then
+            rates.Common = 0.05
         end
     end
+
+    local roll = math.random()
+
+    if roll < rates.Rainbow then
+        return "Rainbow"
+    elseif roll < rates.Rainbow + rates.Legendary then
+        return "Legendary"
+    elseif roll < rates.Rainbow + rates.Legendary + rates.Epic then
+        return "Epic"
+    elseif roll < rates.Rainbow + rates.Legendary + rates.Epic + rates.Rare then
+        return "Rare"
+    elseif roll < rates.Rainbow + rates.Legendary + rates.Epic + rates.Rare + rates.UnCommon then
+        return "UnCommon"
+    else
+        return "Common"
+    end
+end
+
+-- レアリティランクを取得（FishingPower上昇量の倍率用）
+-- Common=1, UnCommon=2, Rare=3, Epic=4, Legendary=5, Rainbow=6
+function BrainrotMonsters.GetRarityRank(rarity)
+    local ranks = {
+        Common = 1,
+        UnCommon = 2,
+        Rare = 3,
+        Epic = 4,
+        Legendary = 5,
+        Rainbow = 6,
+    }
+    return ranks[rarity] or 1
 end
 
 function BrainrotMonsters.GenerateBonus(rarity)
@@ -147,7 +203,9 @@ return {
     CHARACTERS = CHARACTERS,
     GetCharacterById = BrainrotMonsters.GetCharacterById,
     GetRarityConfig = BrainrotMonsters.GetRarityConfig,
-    GetCharactersByRarity = BrainrotMonsters.GetCharactersByRarity,
+    GetAvailableCharacters = BrainrotMonsters.GetAvailableCharacters,
+    RollFromAvailablePool = BrainrotMonsters.RollFromAvailablePool,
+    GetRarityRank = BrainrotMonsters.GetRarityRank,
     RollCharacter = BrainrotMonsters.RollCharacter,
     GenerateBonus = BrainrotMonsters.GenerateBonus,
 }

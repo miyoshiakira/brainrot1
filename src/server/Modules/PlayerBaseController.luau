@@ -77,6 +77,167 @@ local function setUpTrashBoxAction(trashBox)
     end)
 end
 
+-- 釣り竿アップグレードの挙動を初期化する関数
+local ROD_UPGRADE_COSTS = {
+    100,    -- FishingRod1 → 2
+    500,    -- FishingRod2 → 3
+    2000,   -- FishingRod3 → 4
+    10000,  -- FishingRod4 → 5
+}
+
+-- エリア解放の挙動を初期化する関数
+local AREA_OPEN_COSTS = {
+    {AreaName = "草原", cost = 10000},
+    {AreaName = "沼地", cost = 50000},
+    {AreaName = "市街地", cost = 200000},
+    {AreaName = "洞窟", cost = 1000000},
+}
+
+-- AreaBlockタグからエリア名に対応するコストを検索
+local function getAreaCost(areaName: string): number?
+    for _, entry in ipairs(AREA_OPEN_COSTS) do
+        if entry.AreaName == areaName then
+            return entry.cost
+        end
+    end
+    return nil
+end
+
+-- AreaBlockにProximityPromptを設定
+local AREA_BLOCK_TAG = "AreaBlock"
+
+local function setupAreaBlocks()
+    local areaBlocks = CollectionService:GetTagged(AREA_BLOCK_TAG)
+    for _, areaBlock in ipairs(areaBlocks) do
+        local areaName = areaBlock:GetAttribute("AreaName")
+        if not areaName then
+            warn(string.format("[AreaBlock] AreaName属性が未設定: %s", areaBlock.Name))
+            continue
+        end
+
+        local cost = getAreaCost(areaName)
+        if not cost then
+            warn(string.format("[AreaBlock] 不明なエリア名: %s", areaName))
+            continue
+        end
+
+        local body = areaBlock.PrimaryPart or areaBlock:FindFirstChildWhichIsA("BasePart")
+        if not body then continue end
+
+        -- 既存プロンプトがあればスキップ
+        if body:FindFirstChildOfClass("ProximityPrompt") then continue end
+
+        local prompt = Instance.new("ProximityPrompt")
+        prompt.Parent = body
+        prompt.ObjectText = areaName
+        prompt.ActionText = string.format("解放する(%s)", MonsterManager.FormatNumber(cost))
+        prompt.MaxActivationDistance = 15
+
+        prompt.Triggered:Connect(function(player)
+            -- クライアントにエリア解放要求を送る（クライアント側で最終判定）
+            RemoteEvents.AreaUnlockRequest:FireClient(player, areaName, cost)
+        end)
+    end
+
+    -- 実行中に追加されたAreaBlockにも対応
+    CollectionService:GetInstanceAddedSignal(AREA_BLOCK_TAG):Connect(function(areaBlock)
+        task.wait(0.5)
+        local areaName = areaBlock:GetAttribute("AreaName")
+        if not areaName then return end
+        local cost = getAreaCost(areaName)
+        if not cost then return end
+
+        local body = areaBlock.PrimaryPart or areaBlock:FindFirstChildWhichIsA("BasePart")
+        if not body then return end
+        if body:FindFirstChildOfClass("ProximityPrompt") then return end
+
+        local prompt = Instance.new("ProximityPrompt")
+        prompt.Parent = body
+        prompt.ObjectText = areaName
+        prompt.ActionText = string.format("解放する(%s)", MonsterManager.FormatNumber(cost))
+        prompt.MaxActivationDistance = 15
+
+        prompt.Triggered:Connect(function(player)
+            RemoteEvents.AreaUnlockRequest:FireClient(player, areaName, cost)
+        end)
+    end)
+end
+
+-- 釣り竿アップグレードの挙動を初期化する関数
+local function setUpVoxelBaitShopAction(_player: Player)
+    local VoxelBaitShop = game.workspace:FindFirstChild("VoxelBaitShop")
+    if not VoxelBaitShop then return end
+    -- 既にProximityPromptがある場合は重複作成を防止
+    local body = VoxelBaitShop.PrimaryPart
+    if not body then return end
+    if body:FindFirstChildOfClass("ProximityPrompt") then return end
+    local prompt = Instance.new("ProximityPrompt")
+    prompt.Parent = body
+    prompt.ObjectText = "釣り竿ショップ"
+    prompt.ActionText = "アップグレード"
+    prompt.MaxActivationDistance = 10
+    prompt.Triggered:Connect(function(player)
+        local currentRank = EquipmentSystem.getRodRank(player)
+        local maxRank = #EquipmentSystem.getRodLevelNames()
+
+        -- 既に最大ランク
+        if currentRank >= maxRank then
+            RemoteEvents.NotifyPlayer:FireClient(player, "🎣 釣り竿", "これ以上アップグレードできません！")
+            return
+        end
+
+        -- コスト取得
+        local upgradeCost = ROD_UPGRADE_COSTS[currentRank]
+        if not upgradeCost then
+            RemoteEvents.NotifyPlayer:FireClient(player, "⚠️ エラー", "アップグレードコストが未定義です")
+            return
+        end
+
+        -- 所持金チェック
+        local success = DataManager.SpendMoney(player, upgradeCost)
+        if not success then
+            RemoteEvents.NotifyPlayer:FireClient(player, "⚠️ 所持金不足",
+                string.format("アップグレードには %s 必要です", MonsterManager.FormatNumber(upgradeCost)))
+            return
+        end
+
+        -- 次ランクの釣り竿を装備
+        local nextRank = currentRank + 1
+        local nextRodName = "FishingRod" .. nextRank
+        EquipmentSystem.equipFishingRod(player, nextRodName)
+
+        -- プロファイルに保存
+        local profile = DataManager.GetProfile(player)
+        if profile then
+            profile.EquippedRodName = nextRodName
+        end
+
+        -- クライアントに釣り竿ランク変更を通知
+        RemoteEvents.RodRankChanged:FireClient(player, nextRank)
+
+        -- プロンプトのテキスト更新
+        if nextRank < maxRank then
+            local nextCost = ROD_UPGRADE_COSTS[nextRank]
+            prompt.ActionText = string.format("アップグレード(%s)", MonsterManager.FormatNumber(nextCost or 0))
+        else
+            prompt.ActionText = "MAX"
+        end
+
+        RemoteEvents.NotifyPlayer:FireClient(player, "🎣 釣り竿アップグレード!",
+            string.format("FishingRod%d → FishingRod%d", currentRank, nextRank))
+
+        print(string.format("[BaitShop] %s: FishingRod%d → FishingRod%d (cost: %d)", player.Name, currentRank, nextRank, upgradeCost))
+    end)
+
+    -- 初期表示: 現在のランクに応じたコストを表示
+    local function updatePromptText()
+        -- 全プレイヤー共通のショップなので、近くにいるプレイヤーのランクを反映できない
+        -- 既定としてFishingRod1→2のコストを表示
+        prompt.ActionText = string.format("アップグレード(%s)", MonsterManager.FormatNumber(ROD_UPGRADE_COSTS[1]))
+    end
+    updatePromptText()
+end
+
 local function FindPlayerBase(player)
     local playerBase = CommonFunctions.findModelById(game.workspace, CreatePlayerBaseName(player))
     return playerBase
@@ -231,6 +392,8 @@ local function SetupPlayerBase(player: Player)
     end
     -- パッシブコイン生成を開始
     setUpMoneyBox(player)
+    -- 釣り竿屋さん
+    setUpVoxelBaitShopAction(player)
 
     -- 既存の加算ループ処理
     task.spawn(function()
@@ -400,6 +563,7 @@ end
 
 return {
     setupUpgradeButton = setupUpgradeButton,
+    setupAreaBlocks = setupAreaBlocks,
     FindPlayerBase = FindPlayerBase,
     FindPlayerSlots = FindPlayerSlots,
     FindPlayerSlotsMonsters = FindPlayerSlotsMonsters,

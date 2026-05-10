@@ -3,6 +3,7 @@ local CommonFunctions = require(script.Parent.CommonFunctions)
 local DataManager = require(script.Parent.DataManager)
 local BrainrotMonsters = require(ReplicatedStorage.Shared.BrainrotMonsters).BrainrotMonsters
 local MonsterManager = require(script.Parent.MonsterManager)
+local EquipmentSystem = require(script.Parent.EquipmentSystem)
 local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
 local FishingSplashEffect = require(script.Parent.FishingSplashEffect)
 
@@ -35,20 +36,20 @@ local function ProcessFishing(player, fishBox)
         return false
     end
 
-    -- レアリティ決定
-    local rarity = BrainrotMonsters.RollCharacter(false)
-    if not rarity then return false end
-
-    -- キャラクター選択
-    local characters = BrainrotMonsters.GetCharactersByRarity(rarity, profile.FishingPower or 0)
-    if #characters == 0 then return false end
-
-    local selectedChar = characters[math.random(1, #characters)]
+    -- Biomeに基づいてモンスター抽選 → レアリティ抽選（FishingPower・釣り竿ランクでボーナス）
+    local biome = fishBox:GetAttribute("Biome")
+    local rodRank = EquipmentSystem.getRodRank(player)
+    local selectedChar, rarity = BrainrotMonsters.RollFromAvailablePool(false, biome, profile.FishingPower or 0, rodRank)
+    if not selectedChar then return false end
     profile.TotalCharactersCollected = (profile.TotalCharactersCollected or 0) + 1
 
     if rarity == "Rainbow" then
         profile.RainbowCharactersFound = (profile.RainbowCharactersFound or 0) + 1
     end
+
+    -- 釣りパワー上昇: (1～3のランダム) × レアリティランク × 釣り竿ランク
+    local powerGain = math.random(1, 3) * BrainrotMonsters.GetRarityRank(rarity) * rodRank
+    profile.FishingPower = (profile.FishingPower or 0) + powerGain
 
     -- 水しぶきエフェクト（ロック中は他の釣り不可）
     fishingLock[player.UserId] = true
@@ -57,13 +58,14 @@ local function ProcessFishing(player, fishBox)
         fishingLock[player.UserId] = nil
     end)
 
-    -- キャラクターをプレイヤーに持たせる
-    MonsterManager.SpawnCharacterModel(player, selectedChar.MonsterId)
+    -- キャラクターをプレイヤーに持たせる（rarityを渡す）
+    MonsterManager.SpawnCharacterModel(player, selectedChar.MonsterId, rarity)
 
-    -- クライアントに獲得通知
-    RemoteEvents.CharacterCollected:FireClient(player, selectedChar.MonsterId)
+    -- クライアントに獲得通知（rarityも送信）
+    RemoteEvents.CharacterCollected:FireClient(player, selectedChar.MonsterId, rarity)
+    RemoteEvents.FishingPowerChanged:FireClient(player, profile.FishingPower)
 
-    print(string.format("[FishingAction] %s が釣りで %s (%s) を獲得！", player.Name, selectedChar.MonsterId, rarity))
+    print(string.format("[FishingAction] %s が釣りで %s (%s) を獲得！ FishingPower +%d → %d", player.Name, selectedChar.MonsterId, rarity, powerGain, profile.FishingPower))
     
     return true
 end

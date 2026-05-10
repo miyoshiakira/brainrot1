@@ -27,6 +27,7 @@ end
 -- レアリティごとのUI色・サイズ設定
 local RARITY_UI: {[string]: {Color3: Color3?, TextSize: number?}} = {
     Common =     {Color3 = Color3.fromRGB(180, 180, 180)},
+    UnCommon =   {Color3 = Color3.fromRGB(100, 200, 100)},
     Rare =       {Color3 = Color3.fromRGB(80, 130, 255)},
     Epic =       {Color3 = Color3.fromRGB(180, 70, 255)},
     Legendary =  {Color3 = Color3.fromRGB(255, 200, 50), TextSize = 14},
@@ -85,14 +86,14 @@ local function UpdateMonsterUI(monsterModel: Instance)
 end
 
 -- モンスターが追加された時の処理
-local function SetInitStatus(monsterModel, monsterId, modelName)
+local function SetInitStatus(monsterModel, monsterId, modelName, rarity)
     local monsterStatusModel = BrainrotMonsters.GetCharacterById(monsterId)
     monsterModel:SetAttribute("MonsterId", monsterId)
     monsterModel:SetAttribute("ModelName", modelName)
     monsterModel:SetAttribute("MonsterName", monsterStatusModel.MonsterName)
     monsterModel:SetAttribute("Level", monsterStatusModel.Level or 1)
     monsterModel:SetAttribute("Money", monsterStatusModel.Money)
-    monsterModel:SetAttribute("Rarity", monsterStatusModel.Rarity)
+    monsterModel:SetAttribute("Rarity", rarity or "Common")
     UpdateMonsterUI(monsterModel)
 end
 
@@ -124,6 +125,7 @@ end
 -- レアリティ倍率
 local RARITY_MULTIPLIER: {[string]: number} = {
     Common = 1.0,
+    UnCommon = 1.2,
     Rare = 1.5,
     Epic = 2.0,
     Legendary = 3.5,
@@ -172,7 +174,7 @@ end
 -- ※この関数はPlayerBaseControllerに移動しました（循環依存回避のため）
 -- PlayerBaseController.GetSlotIncomePerSecond を使用してください
 -- キャラクター3Dモデルを生成してプレイヤーに持たせる
-function MonsterManager.SpawnCharacterModel(player: Player, monsterId: string)
+function MonsterManager.SpawnCharacterModel(player: Player, monsterId: string, rarity: string?)
     local character = player.Character
     if not character then return nil end
 
@@ -201,21 +203,13 @@ function MonsterManager.SpawnCharacterModel(player: Player, monsterId: string)
         CollectionService:AddTag(charModel, "Monster")
 
         -- レアリティに応じた色変更＋物理設定
-        MonsterManager.SetupCharModel(charModel, charDef.Rarity)
+        MonsterManager.SetupCharModel(charModel, rarity or "Common")
     else
         -- フォールバック：シンプルなブロック
-        -- charModel = Instance.new("Part")
-        -- charModel.Name = "HeldCharacter_" .. player.Name
-        -- charModel.Size = Vector3.new(2, 2, 2)
-        -- charModel.Color = charColor
-        -- charModel.Material = Enum.Material.SmoothPlastic
-        -- charModel.CanCollide = false
-        -- charModel.Anchored = false
-        -- charModel.Massless = true
     end
 
     -- キャラクター情報を属性として保存
-    SetInitStatus(charModel, monsterId, charDef.ModelName)
+    SetInitStatus(charModel, monsterId, charDef.ModelName, rarity)
     charModel:SetAttribute("Owner", player.UserId)
 
     -- PrimaryPartを取得（Weld用）
@@ -237,7 +231,7 @@ function MonsterManager.SpawnCharacterModel(player: Player, monsterId: string)
         Model = charModel,
         MonsterId = monsterId,
         MonsterName = charDef.Name,
-        Rarity = charDef.Rarity,
+        Rarity = rarity or "Common",
         Weld = weld,
     })
 

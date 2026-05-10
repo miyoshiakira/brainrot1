@@ -113,6 +113,14 @@ function EquipmentSystem.getFishingRodName(player)
 	return fishingRod:GetAttribute("RodName")
 end
 
+-- 釣り竿ランクを取得（FishingRod1=1, FishingRod2=2, ...）
+function EquipmentSystem.getRodRank(player)
+	local rodName = EquipmentSystem.getFishingRodName(player)
+	if not rodName then return 1 end
+	local rank = tonumber(string.match(rodName, "%d+"))
+	return rank or 1
+end
+
 -- 釣り竿レベル一覧を取得
 function EquipmentSystem.getRodLevelNames()
 	local names = {}

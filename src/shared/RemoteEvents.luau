@@ -47,6 +47,9 @@ RemoteEvents.MoneyChanged = getOrCreateRemoteEvent("MoneyChanged")
 RemoteEvents.ObjectUnlocked = getOrCreateRemoteEvent("ObjectUnlocked")
 RemoteEvents.NotifyPlayer = getOrCreateRemoteEvent("NotifyPlayer")
 RemoteEvents.FishingPowerChanged = getOrCreateRemoteEvent("FishingPowerChanged")
+RemoteEvents.RodRankChanged = getOrCreateRemoteEvent("RodRankChanged")
+RemoteEvents.AreaUnlockRequest = getOrCreateRemoteEvent("AreaUnlockRequest")
+RemoteEvents.AreaUnlocked = getOrCreateRemoteEvent("AreaUnlocked")
 
 -- ブレインロットキャラクター関連イベント
 RemoteEvents.CharacterCollected = getOrCreateRemoteEvent("CharacterCollected")  -- キャラクター獲得通知

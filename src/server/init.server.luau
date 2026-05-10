@@ -26,6 +26,7 @@ RemoteEvents.GetPlayerData.OnServerInvoke = function(player)
         return {
             Money = profile.Money,
             FishingPower = profile.FishingPower,
+            RodRank = tonumber(string.match(profile.EquippedRodName or "FishingRod1", "%d+")) or 1,
             TotalCharactersCollected = profile.TotalCharactersCollected or 0,
             RainbowCharactersFound = profile.RainbowCharactersFound or 0,
         }
@@ -37,7 +38,6 @@ end
 local CommonFunctions = require(script.Modules.CommonFunctions)
 local moneyBox = CommonFunctions.findModelById(game.workspace, "MoneyBox")
 
-local CollectionService = game:GetService("CollectionService")
 local FishManager = require(script.Modules.FishManager)
 local WhaleSharkEatLogic = require(script.Modules.WhaleSharkEatLogic)
 
@@ -77,6 +77,15 @@ Players.PlayerAdded:Connect(function(player)
         RemoteEvents.MoneyChanged:FireClient(player, profile.Money)
         RemoteEvents.FishingPowerChanged:FireClient(player, profile.FishingPower)
 
+        -- 解放済みエリア一覧をクライアントに通知
+        local unlockedAreas = {}
+        if profile.UnlockedAreas then
+            for areaName, _ in pairs(profile.UnlockedAreas) do
+                table.insert(unlockedAreas, areaName)
+            end
+        end
+        RemoteEvents.AreaUnlocked:FireClient(player, unlockedAreas)
+
         -- 放置報酬があれば通知
         if profile.SessionCount > 1 then
             RemoteEvents.NotifyPlayer:FireClient(player, "おかえりなさい！", "セッション #" .. profile.SessionCount)
@@ -84,6 +93,59 @@ Players.PlayerAdded:Connect(function(player)
     end
 
 
+end)
+
+-- エリア解放処理（クライアントから要求受信）
+RemoteEvents.AreaUnlocked.OnServerEvent:Connect(function(player, areaName)
+    if type(areaName) ~= "string" then return end
+
+    local profile = DataManager.GetProfile(player)
+    if not profile then return end
+
+    -- 既に解放済みならスキップ
+    if profile.UnlockedAreas and profile.UnlockedAreas[areaName] then
+        RemoteEvents.AreaUnlocked:FireClient(player, areaName)
+        return
+    end
+
+    -- コスト検索
+    local AREA_OPEN_COSTS = {
+        {AreaName = "草原", cost = 10000},
+        {AreaName = "沼地", cost = 50000},
+        {AreaName = "市街地", cost = 200000},
+        {AreaName = "洞窟", cost = 1000000},
+    }
+    local cost = nil
+    for _, entry in ipairs(AREA_OPEN_COSTS) do
+        if entry.AreaName == areaName then
+            cost = entry.cost
+            break
+        end
+    end
+    if not cost then
+        RemoteEvents.NotifyPlayer:FireClient(player, "⚠️ エラー", "不明なエリアです")
+        return
+    end
+
+    -- 課金
+    local success = DataManager.SpendMoney(player, cost)
+    if not success then
+        RemoteEvents.NotifyPlayer:FireClient(player, "⚠️ 所持金不足",
+            string.format("エリア解放には %s 必要です", require(script.Modules.MonsterManager).FormatNumber(cost)))
+        return
+    end
+
+    -- 解放フラグ保存
+    if not profile.UnlockedAreas then
+        profile.UnlockedAreas = {}
+    end
+    profile.UnlockedAreas[areaName] = true
+
+    -- クライアントに通知（単一エリア名を送信 → クライアント側でAreaBlock破壊）
+    RemoteEvents.AreaUnlocked:FireClient(player, areaName)
+    RemoteEvents.NotifyPlayer:FireClient(player, "🗺️ エリア解放!", areaName .. " が解放されました！")
+
+    print(string.format("[AreaUnlock] %s: %s 解放 (cost: %d)", player.Name, areaName, cost))
 end)
 
 -- お金が変わったときの通知（DataManagerから呼び出し可能にする）
@@ -114,6 +176,8 @@ end
 -- 釣りシステムを初期化
 print("[Server] 釣りシステムを初期化")
 FishManager.Initialize()
+-- エリアブロック初期化
+PlayerBaseController.setupAreaBlocks()
 -- 投げシステムを初期化
 print("[Server] 投げシステムを初期化")
 ThrowAction.Initialize()

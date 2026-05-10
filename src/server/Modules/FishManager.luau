@@ -1,12 +1,11 @@
-local FishManager = {} -- ★1: モジュール用のテーブル定義が必要
+local FishManager = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local riverPart = game.Workspace:FindFirstChild("FishColliderBox")
+local CollectionService = game:GetService("CollectionService")
 local FishingAction = require(script.Parent.FishingAction)
 
--- FishBoxAnimationモジュールを読み込む
-
-local MAX_FISH_COUNT = 20 -- 最大数
-local SPAWN_INTERVAL = 3 -- 何秒ごとに増やすか
+local FISH_POINT_TAG = "FishPoint"
+local MAX_FISH_COUNT = 5 -- 最大数
+local SPAWN_INTERVAL = 1 -- 何秒ごとに増やすか
 -- 内部関数：プロンプトの設定
 local function setUpFishBoxAction(fishBox)
     -- ProceduralModelの場合、Generated内のModelを探す
@@ -29,13 +28,15 @@ local function setUpFishBoxAction(fishBox)
     if not existingPrompt then
         print("[FishBox]: プロンプト設定開始")
         local prompt = Instance.new("ProximityPrompt")
-        prompt.ObjectText = "川"
+        local biome = fishBox:GetAttribute("Biome") or "?"
+        prompt.ObjectText = biome
         prompt.ActionText = "釣りをする"
         prompt.MaxActivationDistance = 20
         prompt.Parent = targetModel
         
         prompt.Triggered:Connect(function(player)
-            print(player.Name .. "が川で釣りしました: " .. fishBox.Name)
+            local biome = fishBox:GetAttribute("Biome") or "unknown"
+            print(player.Name .. "が" .. biome .. "で釣りしました: " .. fishBox.Name)
             
             -- キャラクターゲット処理
             local success = FishingAction.ProcessFishing(player, fishBox)
@@ -63,35 +64,53 @@ local function spawnFishRandomly(areaPart, fishTemplate)
     local templateRotation = fishTemplate.WorldPivot.Rotation -- 回転情報を取得
     -- 4. 魚影を生成して配置
     local newFish = fishTemplate:Clone()
-    newFish.Parent = riverPart
+    -- FishColliderBoxからBiome属性をコピー
+    local biome = areaPart:GetAttribute("Biome")
+    if biome then
+        newFish:SetAttribute("Biome", biome)
+    end
+    newFish.Parent = areaPart
     newFish:PivotTo(spawnCFrame * templateRotation)
     setUpFishBoxAction(newFish)
     
     return newFish
 end
 
+-- 指定FishPointの現在の魚数を取得
+local function getFishCount(fishPoint)
+    return #fishPoint:GetChildren()
+end
+
 -- 外部から呼び出す初期化関数
-function FishManager.Initialize() -- ★3: local は不要（モジュール関数にするため）
-    -- ★ 一定時間ごとに自動で増やすループ処理
+function FishManager.Initialize()
     local fishBoxTemplate = ReplicatedStorage:FindFirstChild('FishBox')
-        
+    local fishPoints = CollectionService:GetTagged(FISH_POINT_TAG)
+
+    print(string.format("[FishManager] FishPoint数: %d", #fishPoints))
+    for _, fp in ipairs(fishPoints) do
+        local biome = fp:GetAttribute("Biome") or "unknown"
+        print(string.format("[FishManager] FishPoint: %s (Biome: %s)", fp.Name, biome))
+    end
+
+    -- 新しいFishPointが追加された場合も対応
+    CollectionService:GetInstanceAddedSignal(FISH_POINT_TAG):Connect(function(fishPoint)
+        print(string.format("[FishManager] FishPoint追加: %s (Biome: %s)", fishPoint.Name, fishPoint:GetAttribute("Biome") or "unknown"))
+    end)
+
     task.spawn(function()
         while true do
             task.wait(SPAWN_INTERVAL)
-            -- GetChildren() で取得したリストの数を # で数える
-            local currentFishCount = #riverPart:GetChildren()
-            
-            if currentFishCount < MAX_FISH_COUNT then
-                -- 第1引数に範囲パーツ、第2引数にテンプレートを渡す
-                local spawnedFish = spawnFishRandomly(riverPart, fishBoxTemplate)
-                
-                -- 生成された魚を riverPart の中に入れる（これでカウント対象になる）
-                if spawnedFish then
-                    spawnedFish.Parent = riverPart
+            -- 各FishPointごとにMAX_FISH_COUNTまでスポーン
+            for _, areaPart in ipairs(fishPoints) do
+                if getFishCount(areaPart) < MAX_FISH_COUNT then
+                    local spawnedFish = spawnFishRandomly(areaPart, fishBoxTemplate)
+                    if spawnedFish then
+                        spawnedFish.Parent = areaPart
+                    end
                 end
             end
         end
     end)
 end
 
-return FishManager -- ★4: 最後にモジュールを返す（余計な end は消去）
+return FishManager

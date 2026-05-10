@@ -24,6 +24,7 @@ print("=================================")
 -- 現在の所持金と釣りパワー
 local currentMoney = 0
 local currentFishingPower = 0
+local currentRodRank = 1
 
 -- パステルカラー定義
 local COLORS = {
@@ -60,7 +61,7 @@ local function createMainUI(): ScreenGui
     -- 上部ステータスバー (右上に配置)
     local topBar = Instance.new("Frame")
     topBar.Name = "TopBar"
-    topBar.Size = UDim2.new(0, 150, 0, 90) -- コンパクトなサイズに変更
+    topBar.Size = UDim2.new(0, 150, 0, 130) -- 釣り竿ランク表示追加で拡張
     topBar.Position = UDim2.new(1, -160, 0, 10) -- 右上に配置
     topBar.BackgroundColor3 = COLORS.Dark
     topBar.BackgroundTransparency = 0.3
@@ -140,6 +141,41 @@ local function createMainUI(): ScreenGui
     fishingPowerLabel.Font = Enum.Font.GothamBold
     fishingPowerLabel.TextXAlignment = Enum.TextXAlignment.Left
     fishingPowerLabel.Parent = fishingPowerFrame
+
+    -- 釣り竿ランク表示
+    local rodRankFrame = Instance.new("Frame")
+    rodRankFrame.Name = "RodRankFrame"
+    rodRankFrame.Size = UDim2.new(1, -10, 0, 35)
+    rodRankFrame.Position = UDim2.new(0, 5, 0, 85)
+    rodRankFrame.BackgroundColor3 = COLORS.Sky
+    rodRankFrame.BackgroundTransparency = 0.2
+    rodRankFrame.BorderSizePixel = 0
+    rodRankFrame.Parent = topBar
+
+    local rodRankCorner = Instance.new("UICorner")
+    rodRankCorner.CornerRadius = UDim.new(0, 8)
+    rodRankCorner.Parent = rodRankFrame
+
+    local rodRankIcon = Instance.new("TextLabel")
+    rodRankIcon.Name = "Icon"
+    rodRankIcon.Size = UDim2.new(0, 30, 1, 0)
+    rodRankIcon.Position = UDim2.new(0, 5, 0, 0)
+    rodRankIcon.BackgroundTransparency = 1
+    rodRankIcon.Text = "🎣"
+    rodRankIcon.TextSize = 20
+    rodRankIcon.Parent = rodRankFrame
+
+    local rodRankLabel = Instance.new("TextLabel")
+    rodRankLabel.Name = "RodRankLabel"
+    rodRankLabel.Size = UDim2.new(1, -40, 1, 0)
+    rodRankLabel.Position = UDim2.new(0, 35, 0, 0)
+    rodRankLabel.BackgroundTransparency = 1
+    rodRankLabel.TextColor3 = COLORS.Dark
+    rodRankLabel.Text = "Lv.1"
+    rodRankLabel.TextSize = 18
+    rodRankLabel.Font = Enum.Font.GothamBold
+    rodRankLabel.TextXAlignment = Enum.TextXAlignment.Left
+    rodRankLabel.Parent = rodRankFrame
 
     -- ========================================
     -- 通知コンテナ
@@ -312,6 +348,29 @@ local function updateFishingPowerDisplay(newFishingPower: number)
     currentFishingPower = newFishingPower
 end
 
+-- 釣り竿ランク表示を更新
+local function updateRodRankDisplay(newRank: number)
+    local ui = playerGui:FindFirstChild("BrainrotUI")
+    if not ui then return end
+
+    local rodRankFrame = ui:FindFirstChild("TopBar"):FindFirstChild("RodRankFrame")
+    if not rodRankFrame then return end
+
+    local label = rodRankFrame:FindFirstChild("RodRankLabel")
+    if not label then return end
+
+    -- アニメーション
+    if newRank > currentRodRank then
+        label.TextColor3 = COLORS.Perfect
+        task.delay(0.5, function()
+            label.TextColor3 = COLORS.Dark
+        end)
+    end
+
+    label.Text = string.format("Lv.%d", newRank)
+    currentRodRank = newRank
+end
+
 
 -- 通知を表示
 local function showNotification(title: string, message: string, color: Color3?)
@@ -479,14 +538,49 @@ RemoteEvents.FishingPowerChanged.OnClientEvent:Connect(function(newFishingPower)
     updateFishingPowerDisplay(newFishingPower)
 end)
 
+RemoteEvents.RodRankChanged.OnClientEvent:Connect(function(newRank)
+    updateRodRankDisplay(newRank)
+end)
+
+-- エリア解放要求受信（ProximityPromptトリガー → クライアント側で解放実行）
+RemoteEvents.AreaUnlockRequest.OnClientEvent:Connect(function(areaName, cost)
+    -- クライアントからサーバーへエリア解放を要求
+    RemoteEvents.AreaUnlocked:FireServer(areaName)
+end)
+
+-- 解放済みエリア一覧受信 → 該当AreaBlockをクライアント側で破壊
+local function removeAreaBlockByName(areaName: string)
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:GetAttribute("AreaName") == areaName then
+            obj:Destroy()
+            print(string.format("[Area] クライアント側でAreaBlock削除: %s", areaName))
+            return
+        end
+    end
+end
+
+RemoteEvents.AreaUnlocked.OnClientEvent:Connect(function(unlockedAreas)
+    -- unlockedAreasは配列（ロード時）または単一文字列（解放直後）の両方に対応
+    if type(unlockedAreas) == "table" then
+        for _, areaName in ipairs(unlockedAreas) do
+            removeAreaBlockByName(areaName)
+        end
+    elseif type(unlockedAreas) == "string" then
+        removeAreaBlockByName(unlockedAreas)
+    end
+end)
+
 RemoteEvents.NotifyPlayer.OnClientEvent:Connect(function(title, message)
     showNotification(title, message)
 end)
 
 -- キャラクター関連イベント
-RemoteEvents.CharacterCollected.OnClientEvent:Connect(function(droppedMonsterId)
+RemoteEvents.CharacterCollected.OnClientEvent:Connect(function(droppedMonsterId, rarity)
     local charData = BrainrotMonsters.GetCharacterById(droppedMonsterId)
-    showCharacterCollected(charData)
+    if charData then
+        charData.Rarity = rarity
+        showCharacterCollected(charData)
+    end
 end)
 
 -- キャラクター3Dモデル生成イベント
@@ -542,6 +636,7 @@ task.spawn(function()
     if data then
         updateCoinsDisplay(data.Money)
         updateFishingPowerDisplay(data.FishingPower or 0)
+        updateRodRankDisplay(data.RodRank or 1)
         showNotification("🎣 Brainrot", "釣りを始めよう!", COLORS.Pink)
     end
 end)

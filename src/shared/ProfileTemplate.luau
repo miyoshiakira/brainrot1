@@ -33,6 +33,9 @@ export type ProfileData = {
     -- アンロック済みオブジェクトID
     UnlockedObjects: {[string]: boolean},
 
+    -- 解放済みエリア
+    UnlockedAreas: {[string]: boolean},
+
     -- 放置報酬用
     LastOnlineTime: number,
     OfflineEarningsRate: number,  -- 1秒あたりのオフライン収益
@@ -62,6 +65,9 @@ local ProfileTemplate: ProfileData = {
 
     -- アンロック済みオブジェクトID
     UnlockedObjects = {},
+
+    -- 解放済みエリア
+    UnlockedAreas = {},
 
     -- 放置報酬用
     LastOnlineTime = 0,
