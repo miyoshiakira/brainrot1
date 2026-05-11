@@ -1,4 +1,5 @@
 local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Constants = require(ServerScriptService.Server.Constants)
 -- ServerScriptService/Server/Modules/CommonFunctions
 local CharacterWeld = "CharacterWeld"
@@ -28,6 +29,23 @@ end
 function CommonFunctions.enableAnchor(BaseModel, enable)
     -- アンカーを有効化/無効化
     BaseModel.PrimaryPart.Anchored = enable
+end
+
+-- 物理的な接続（Weld）を安全に行う共通関数
+function CommonFunctions.enableCollider(BaseModel, enable)
+-- モデル内のすべての要素を確認
+    for _, part in ipairs(BaseModel:GetDescendants()) do
+        -- それが BasePart（MeshPartやPartなど）であれば実行
+        if part:IsA("BasePart") then
+            part.CanCollide = enable
+            
+            -- オプション：センサー（Touchイベント）も無効化したい場合
+            part.CanTouch = enable
+            
+            -- オプション：マウスのクリック判定も無効化したい場合
+            part.CanQuery = enable
+        end
+    end
 end
 
 -- 物理的な接続（Weld）を安全に行う共通関数
@@ -88,6 +106,36 @@ function CommonFunctions.autoWeldModel(model)
     -- 3. 最後にPrimaryPartだけをAnchorするかは、設置状況に合わせて制御する
     -- ※この時点では、モデル全体はPrimaryPartに繋がっているので、
     -- primary.Anchored = true なら全体が止まり、false なら全体が物理で動きます。
+end
+
+-- 音を鳴らして、終わったら自動で消去する関数
+function CommonFunctions.PlaySoundAt(soundTemplate, parent)
+    local newSound = soundTemplate:Clone()
+    newSound.Parent = parent
+    newSound:Play()
+    newSound.Ended:Connect(function()
+        newSound:Destroy()
+    end)
+end
+
+-- 音を鳴らして、終わったら自動で消去する関数
+function CommonFunctions.PlayAudioByNameAt(soundName, parent)
+    local soundTemplate = ReplicatedStorage:FindFirstChild("Audio"):FindFirstChild(soundName)
+    if not soundTemplate then
+        warn("PlayAudioByNameAt: " .. soundName .. " が見つかりませんでした")
+        return
+    end
+    CommonFunctions.PlaySoundAt(soundTemplate, parent)
+end
+
+-- レベルに応じてモデルのScaleを更新する
+-- baseScale=1.0, 毎レベル +0.05 増加（Lv1=1.0, Lv10=1.45, Lv20=1.95...）
+function CommonFunctions.ScaleModelByLevel(model, level)
+    local baseScale = 1.0
+    local scalePerLevel = 0.05
+    local scale = baseScale + ((level or 1) - 1) * scalePerLevel
+
+    model:ScaleTo(scale)
 end
 
 return CommonFunctions

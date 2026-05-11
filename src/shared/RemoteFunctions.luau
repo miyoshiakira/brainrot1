@@ -37,4 +37,6 @@ RemoteFunctions.UpgradeButtonActionTrigger = getOrCreateRemoteFunction("UpgradeB
 RemoteFunctions.TrashBoxAction = getOrCreateRemoteFunction("TrashBoxAction")
 RemoteFunctions.ThrowAction = getOrCreateRemoteFunction("ThrowAction")  -- クライアント→サーバー: キャラクターを投げる
 RemoteFunctions.PickUpAction = getOrCreateRemoteFunction("PickUpAction")  -- クライアント→サーバー: キャラクターをひろう
+RemoteFunctions.PutDownAction = getOrCreateRemoteFunction("PutDownAction")  -- クライアント→サーバー: キャラクターを置く
+RemoteFunctions.CharacterSwapTry = getOrCreateRemoteFunction("CharacterSwapTry")  -- クライアント→サーバー: キャラクターを交換
 return RemoteFunctions

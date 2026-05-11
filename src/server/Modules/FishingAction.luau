@@ -65,6 +65,9 @@ local function ProcessFishing(player, fishBox)
     RemoteEvents.CharacterCollected:FireClient(player, selectedChar.MonsterId, rarity)
     RemoteEvents.FishingPowerChanged:FireClient(player, profile.FishingPower)
 
+    -- 釣り獲得効果音再生
+    CommonFunctions.PlayAudioByNameAt("GetFishing", game.Workspace)
+
     -- 釣り場の位置をクライアントに通知（Y座標+5で安全な着地位置）
     local fishPos = fishBox:GetPivot().Position
     RemoteEvents.LastFishPosition:FireClient(player, Vector3.new(fishPos.X, fishPos.Y + 5, fishPos.Z))

@@ -27,8 +27,9 @@ local function setupSlot(slot)
             Slot = slot,
         })
         local monsterId = slot:GetAttribute("MonsterId")
+        local isCarrying = player.Character and player.Character:FindFirstChild(constants.CHARACTER_MODEL_NAME) ~= nil
         print(string.format("monsterId: %s", tostring(monsterId)))
-        if monsterId then
+        if monsterId and isCarrying then
             prompt.ActionText = "ひろう"
         else
             prompt.ActionText = "配置する"
@@ -37,6 +38,8 @@ local function setupSlot(slot)
 end
 
 -- MoneyBoxの挙動を初期化する関数
+local MoneyEffect = require(script.Parent.MoneyEffect)
+
 local function setUpMoneyBoxAction(moneyBox)
     -- 既にProximityPromptがある場合は重複作成を防止
     if moneyBox:FindFirstChildOfClass("ProximityPrompt") then return end
@@ -51,6 +54,11 @@ local function setUpMoneyBoxAction(moneyBox)
         if money > 0 then
             DataManager.AddMoney(player, money)
             moneyBox:SetAttribute("Money" .. player.UserId, 0)
+
+            -- お金取得効果音
+            CommonFunctions.PlayAudioByNameAt("GetMoney", moneyBox)
+            -- お金取得エフェクト
+            MoneyEffect.Play(moneyBox:GetPivot())
         end
     end)
 end
@@ -215,6 +223,9 @@ local function setUpVoxelBaitShopAction(_player: Player)
         RemoteEvents.NotifyPlayer:FireClient(player, "🎣 釣り竿アップグレード!",
             string.format("FishingRod%d → FishingRod%d", currentRank, nextRank))
 
+        -- レベルアップ音再生
+        CommonFunctions.PlayAudioByNameAt("LevelUp", player.Character)
+
         print(string.format("[BaitShop] %s: FishingRod%d → FishingRod%d (cost: %d)", player.Name, currentRank, nextRank, upgradeCost))
     end)
 
@@ -278,6 +289,12 @@ local function upgradeCharacter(player, UpgradeButton, upgradeCost)
     print("UpgradeButtonActionTrigger - Money spent")
     -- レベルアップ
     character:SetAttribute("Level", currentLevel + 1)
+
+    -- レベルアップ音再生
+    CommonFunctions.PlayAudioByNameAt("LevelUp", character)
+
+    -- レベルに応じたスケール更新
+    CommonFunctions.ScaleModelByLevel(character, currentLevel + 1)
 
     -- 強化演出：回転しながら上昇→下降（終了時にスロットの前方を向く）
     local slot = UpgradeButton.Parent
@@ -507,9 +524,13 @@ function RestoreSlots(player: Player)
                 charModel:PivotTo(targetCFrame)
                 charModel.Parent = slot
                 CommonFunctions.enableAnchor(charModel, true)
+                CommonFunctions.enableCollider(charModel, false)
                 -- 属性設定（保存済みデータから復元）
                 MonsterManager.MappingStatus(monsterInfo, charModel)
                 charModel:SetAttribute("Owner", player.UserId)
+
+                -- レベルに応じたスケール適用
+                CommonFunctions.ScaleModelByLevel(charModel, monsterInfo.Level or 1)
 
                 -- UI更新
                 MonsterManager.UpdateMonsterUI(charModel)

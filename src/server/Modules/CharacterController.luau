@@ -12,8 +12,8 @@ local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 -- 配置時の高さオフセット（浮いている場合はここを下げる）
 local Y_OFFSET = 5.0 -- 2.0から1.0に調整。モデルのPivot位置に合わせて微調整してください
 
--- キャラクターをスロットに配置（RemoteFunction）
-RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelName, slotName)
+-- キャラクターをスロットに配置（共通関数）
+local function placeCharacterInternal(player, heldModelName, slotName)
     -- 1. バリデーション
     local profile = DataManager.GetProfile(player)
     local heldModel = CommonFunctions.findModelById(player.Character, heldModelName)
@@ -54,12 +54,15 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
     -- 物理エンジンに「ここが新しい定位置だよ」と分からせるための短い猶予
     task.wait(0.1)
     CommonFunctions.enableAnchor(heldModel, true)
+    CommonFunctions.enableCollider(heldModel, false)
     heldModel.Parent = slot
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
     -- ひろうボタンの削除
     CommonFunctions.dettachButton(heldModel)
+    -- 効果音
+    CommonFunctions.PlayAudioByNameAt("UISE", game.Workspace)
     -- スロットの状態更新
     print(string.format("[Server] Setting MonsterId to %s", monsterId))
     slot:SetAttribute("MonsterId", monsterId)
@@ -73,6 +76,9 @@ RemoteFunctions.CharacterPlaceTry.OnServerInvoke = function(player, heldModelNam
         activeCharacter = monsterId,
     }
 end
+
+-- RemoteFunctionの割り当て
+RemoteFunctions.CharacterPlaceTry.OnServerInvoke = placeCharacterInternal
 
 -- キャラクターをスロットからとりあげる（RemoteFunction）
 RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
@@ -107,6 +113,7 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     charModel.Parent = character
     -- プレイヤーのHumanoidRootPartにWeldを付与
     CommonFunctions.attachWithWeld(character, charModel, CommonFunctions.CharacterWeld)
+    CommonFunctions.enableCollider(charModel, true)
     -------------------------------------------------------
     -- データの更新処理
     -------------------------------------------------------
@@ -119,11 +126,61 @@ RemoteFunctions.CharacterPickupTry.OnServerInvoke = function(player, slotName)
     -- 強化ボタンの更新
     PlayerBaseController.setupUpgradeButton(slot)
     print(string.format("[Server] %s got %s on %s", player.Name, monsterId, slot.Name))
+    -- 効果音
+    CommonFunctions.PlayAudioByNameAt("UISE", game.Workspace)
 
     return {
         success = true,
         errorMessage = "",
         heldModel = charModel,
+    }
+end
+
+-- キャラクターをスロットと交換（RemoteFunction）
+RemoteFunctions.CharacterSwapTry.OnServerInvoke = function(player, heldModelName, slotName)
+    local slot = CommonFunctions.findModelById(game.workspace, slotName)
+    if not slot then
+        return { success = false, error = "Invalid Request" }
+    end
+
+    local charModel = slot:FindFirstChild(constants.CHARACTER_MODEL_NAME)
+    if not charModel then
+        return { success = false, error = "スロットにキャラクターがいません" }
+    end
+    if charModel:GetAttribute("IsAnimating") then
+        return { success = false, error = "アニメーション中です" }
+    end
+
+    -- 1. スロットのキャラを一時退避（スロットを空にしてPlaceTry可能にする）
+    local slotMonsterId = slot:GetAttribute("MonsterId")
+    charModel.Parent = game.Workspace
+    slot:SetAttribute("MonsterId", nil)
+    slot:SetAttribute("Occupied", false)
+
+    -- 2. 持っているキャラをスロットに配置（共通関数を呼び出し）
+    local placeResult = placeCharacterInternal(player, heldModelName, slotName)
+    if not placeResult or not placeResult.success then
+        -- 失敗時は元に戻す
+        charModel.Parent = slot
+        slot:SetAttribute("MonsterId", slotMonsterId)
+        slot:SetAttribute("Occupied", true)
+        return { success = false, error = placeResult and placeResult.error or "配置失敗" }
+    end
+
+    -- 3. 退避したキャラをプレイヤーに持たせる
+    local character = player.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if humanoidRootPart then
+        charModel:PivotTo(humanoidRootPart.CFrame * CFrame.new(0, 2, -3))
+    end
+    charModel.Parent = character
+    CommonFunctions.attachWithWeld(character, charModel, CommonFunctions.CharacterWeld)
+    CommonFunctions.enableCollider(charModel, true)
+    print(string.format("[Swap] %s: %s ⇔ %s on %s", player.Name, heldModelName, slotMonsterId, slot.Name))
+
+    return {
+        success = true,
+        swappedCharacter = charModel,
     }
 end
 

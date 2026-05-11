@@ -5,6 +5,7 @@ local RemoteFunctions = require(ReplicatedStorage.Shared.RemoteFunctions)
 local UIInit = {}
 
 local ACTION_THROW = "ThrowCharacterAction"
+local ACTION_PUTDOWN = "PutDownCharacterAction"
 
 function UIInit.Initialize()
 
@@ -16,24 +17,35 @@ function UIInit.Initialize()
             if success then
                 print("[UIInit] 投げ成功")
             end
+        elseif actionName == ACTION_PUTDOWN and inputState == Enum.UserInputState.Begin then
+            -- サーバーに置く命令を送り、結果を受け取る
+            print("[UIInit] 置くTry")
+            local success = RemoteFunctions.PutDownAction:InvokeServer()
+            if success then
+                print("[UIInit] 置く成功")
+            end
         end
     end
 
-    -- アクションの登録
-    -- 第1引数: アクション名
-    -- 第2引数: 実行する関数
-    -- 第3引数: 真の場合、スマホにボタンを表示する
-    -- 第4引数以降: 割り当てるキー（PCのキーボードなど）
+    -- 投げるアクション
     ContextActionService:BindAction(
         ACTION_THROW, 
         handleAction, 
         true, 
         Enum.KeyCode.Q, Enum.KeyCode.ButtonX -- PCはQキー、コントローラーはXボタン
     )
-
-    -- スマホ用ボタンの見た目を調整
     ContextActionService:SetTitle(ACTION_THROW, "ぶん投げる")
     ContextActionService:SetPosition(ACTION_THROW, UDim2.new(0.5, 0, 0.2, 0))
+
+    -- 置くアクション
+    ContextActionService:BindAction(
+        ACTION_PUTDOWN,
+        handleAction,
+        true,
+        Enum.KeyCode.E, Enum.KeyCode.ButtonY -- PCはEキー、コントローラーはYボタン
+    )
+    ContextActionService:SetTitle(ACTION_PUTDOWN, "置く")
+    ContextActionService:SetPosition(ACTION_PUTDOWN, UDim2.new(0.5, 0, 0.3, 0))
 end
 
 return UIInit

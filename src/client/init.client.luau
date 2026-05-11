@@ -571,10 +571,16 @@ local function isCarrying()
     return getHeldModel() ~= nil
 end
 
+-- スロット操作ロック（連打防止）
+local slotActionLock = false
+
 local function placeCharacter(slot)
+    if slotActionLock then return false end
     local heldModel = getHeldModel()
     if not heldModel then return false end
+    slotActionLock = true
     local success, errorMessage = RemoteFunctions.CharacterPlaceTry:InvokeServer(heldModel.Name, slot.Name)
+    slotActionLock = false
     if success then
         showNotification("✅ 配置完了!", "スロットに配置しました", COLORS.Good)
         return true
@@ -586,8 +592,11 @@ end
 
 -- スロットからキャラクターを取り外す
 local function removeFromSlot(slot)
+    if slotActionLock then return false end
     if isCarrying() then return true end
+    slotActionLock = true
     local data = RemoteFunctions.CharacterPickupTry:InvokeServer(slot.Name)
+    slotActionLock = false
     if data.success then
         print(string.format("[Client] heldModel: %s", data.heldModel.Name))
         showNotification("✅ 取得完了!", "スロットから取り上げました", COLORS.Good)
@@ -595,6 +604,23 @@ local function removeFromSlot(slot)
     else
         print(data.errorMessage)
         showNotification("⚠️ 失敗", data.errorMessage or "取り上げできませんでした", COLORS.Yellow)
+        return false
+    end
+end
+
+-- スロットのキャラクターと持っているキャラクターを交換
+local function swapWithSlot(slot)
+    if slotActionLock then return false end
+    local heldModel = getHeldModel()
+    if not heldModel then return false end
+    slotActionLock = true
+    local data = RemoteFunctions.CharacterSwapTry:InvokeServer(heldModel.Name, slot.Name)
+    slotActionLock = false
+    if data.success then
+        showNotification("🔄 交換完了!", "キャラクターを交換しました", COLORS.Good)
+        return true
+    else
+        showNotification("⚠️ 失敗", data.error or "交換できませんでした", COLORS.Yellow)
         return false
     end
 end
@@ -715,17 +741,20 @@ RemoteEvents.CharacterSpawned.OnClientEvent:Connect(function(data)
 end)
 
 RemoteFunctions.SlotActionTrigger.OnClientInvoke = function(data)
-    -- TODO: キャラクターをスロットに配置する処理を追加
     local slot = data.Slot
     local monsterId = slot:GetAttribute("MonsterId")
-    if monsterId then
-        -- とりあげる
+    local carrying = isCarrying()
+
+    if monsterId and carrying then
+        -- スロットにキャラがいる ＋ 手に持っている → 交換
+        return swapWithSlot(slot)
+    elseif monsterId then
+        -- スロットにキャラがいる ＋ 手に持っていない → とりあげる
         return removeFromSlot(slot)
     else
-        -- 設置する
+        -- スロットが空 → 設置する
         return placeCharacter(slot)
     end
-    
 end
 
 -- ゴミ箱アクション

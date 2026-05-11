@@ -133,7 +133,8 @@ RemoteEvents.AreaUnlocked.OnServerEvent:Connect(function(player, areaName)
     -- クライアントに通知（単一エリア名を送信 → クライアント側でAreaBlock破壊）
     RemoteEvents.AreaUnlocked:FireClient(player, areaName)
     RemoteEvents.NotifyPlayer:FireClient(player, "🗺️ エリア解放!", areaName .. " が解放されました！")
-
+    -- レベルアップ音再生
+    CommonFunctions.PlayAudioByNameAt("LevelUp", game.Workspace)
     print(string.format("[AreaUnlock] %s: %s 解放 (cost: %d)", player.Name, areaName, cost))
 end)
 
